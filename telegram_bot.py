@@ -416,7 +416,7 @@ async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 def main():
     """Запуск бота"""
     # ⚠️ ВАЖНО: Вставьте свой токен сюда!
-    TOKEN = "8443150665:AAGT7hc5gi8JP8MFUmaQQDNhru6VkKc5aj4"
+    TOKEN = "8371793740:AAGyHz10Ro6JabxomkyjDGsjWhNaf3SUeMI"
     
     # Создаем приложение
     application = Application.builder().token(TOKEN).build()
