@@ -9,15 +9,15 @@ class Book:
     
     def get_info(self):
         info = f"📖 {self.title}\n"
-        info += f"👤 {self.author}\n"
-        info += f"📂 {self.genre}\n"
-        info += f"📄 {self.total_pages} стр."
+        info += f"👤 Автор: {self.author}\n"
+        info += f"📂 Жанр: {self.genre}\n"
+        info += f"📄 Страниц: {self.total_pages}"
         if self.description:
-            info += f"\n📝 {self.description[:50]}..."
+            info += f"\n📝 {self.description[:60]}..."
         return info
     
-    def get_short_info(self):
-        return f"📖 {self.title} - {self.author}"
+    def get_short(self):
+        return f"{self.title[:20]}..." if len(self.title) > 20 else self.title
 
 
 class UserBook:
@@ -29,6 +29,7 @@ class UserBook:
         self.current_page = data.get('current_page', 0)
         self.rating = data.get('rating')
         
+        # Из JOIN
         self.title = data.get('title', '')
         self.author = data.get('author', '')
         self.total_pages = data.get('total_pages', 0)
@@ -36,11 +37,12 @@ class UserBook:
     
     def get_progress(self):
         if self.total_pages > 0 and self.current_page > 0:
-            return (self.current_page / self.total_pages) * 100
+            percent = (self.current_page / self.total_pages) * 100
+            return min(100, percent)
         return 0
     
     def get_info(self):
-        status_text = {
+        status_names = {
             'planned': '📅 Запланировано',
             'reading': '📖 Читаю сейчас',
             'completed': '✅ Прочитано',
@@ -49,7 +51,7 @@ class UserBook:
         
         info = f"📖 {self.title}\n"
         info += f"👤 {self.author}\n"
-        info += f"📂 Статус: {status_text.get(self.status, self.status)}\n"
+        info += f"📂 Статус: {status_names.get(self.status, self.status)}\n"
         
         if self.status == 'reading' and self.current_page > 0:
             progress = self.get_progress()
@@ -57,7 +59,7 @@ class UserBook:
         
         if self.rating:
             stars = "⭐" * self.rating
-            info += f"⭐ Оценка: {stars} ({self.rating}/5)"
+            info += f"⭐ Ваша оценка: {stars}"
         
         return info
 
@@ -67,16 +69,16 @@ class BookManager:
         self.db = db
     
     def get_book(self, book_id):
-        book_data = self.db.get_book(book_id)
-        return Book(book_data) if book_data else None
+        data = self.db.get_book(book_id)
+        return Book(data) if data else None
     
-    def search_books(self, query="", genre=""):
-        books_data = self.db.search_books(query, genre)
-        return [Book(book) for book in books_data]
+    def search_books(self, query="", genre="", limit=10):
+        data = self.db.search_books(query, genre, limit)
+        return [Book(item) for item in data]
     
     def get_top_books(self, criteria="rating", genre="", author="", limit=5):
-        books_data = self.db.get_top_books(criteria, genre, author, limit)
-        return [Book(book) for book in books_data]
+        data = self.db.get_top_books(criteria, genre, author, limit)
+        return [Book(item) for item in data]
     
     def get_all_genres(self):
         return self.db.get_all_genres()
@@ -102,8 +104,8 @@ class UserManager:
         return self.db.rate_book(user_id, book_id, rating)
     
     def get_user_books(self, user_id, status=None):
-        books_data = self.db.get_user_books(user_id, status)
-        return [UserBook(book) for book in books_data]
+        data = self.db.get_user_books(user_id, status)
+        return [UserBook(item) for item in data]
     
     def get_book_info(self, user_id, book_id):
         books = self.get_user_books(user_id)
