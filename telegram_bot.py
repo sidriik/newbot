@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import sqlite3
-import shlex  # <-- ИМПОРТ ДЛЯ ПРАВИЛЬНОГО ПАРСИНГА
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
     Application, CommandHandler, MessageHandler, CallbackQueryHandler,
@@ -15,6 +14,9 @@ TOKEN = "8371793740:AAGyHz10Ro6JabxomkyjDGsjWhNaf3SUeMI"
 db = Database()
 user_manager = UserManager(db)
 book_manager = BookManager(db)
+
+# Состояния для пошагового добавления книги
+ADD_BOOK_STATES = {}
 
 
 # ========== КОМАНДЫ ==========
@@ -56,7 +58,7 @@ async def help_command(update: Update, context):
 /help - Справка
 /progress <ID> <страница> - Обновить прогресс
 /add <ID> - Добавить книгу по ID
-/addbook <название> <автор> <страницы> <жанр> - Добавить новую книгу в каталог
+/addbook - Добавить новую книгу в каталог
 /search <запрос> - Поиск книг
 /stats - Статистика
 /top <rating|popularity> [жанр] - Топ книги
@@ -195,138 +197,114 @@ async def add_command(update: Update, context):
 
 
 async def addbook_command(update: Update, context):
-    """Добавить новую книгу в общий каталог."""
-    if not update.message.text:
-        await update.message.reply_text("❌ Не удалось получить текст сообщения.")
-        return
+    """Добавить новую книгу в общий каталог (упрощенная версия)."""
+    user_id = update.effective_user.id
     
-    # Получаем полный текст
-    full_text = update.message.text.strip()
-    
-    # Если только команда без аргументов
-    if full_text == '/addbook' or full_text == '/addbook@your_bot_name':
-        await update.message.reply_text(
-            "📝 **Использование:** /addbook <название> <автор> <страницы> <жанр> [описание]\n\n"
-            "**Примеры:**\n"
-            '/addbook "1984" "Джордж Оруэлл" 328 "Антиутопия" "Роман о тоталитарном обществе"\n'
-            '/addbook "Мастер и Маргарита" "Михаил Булгаков" 480 "Классика"\n\n'
-            '📌 **Название и автор в кавычках, если содержат пробелы!**\n'
-            '📌 **ОБЯЗАТЕЛЬНО** используйте кавычки для названия и автора с пробелами!\n\n'
-            '**Правильно:** /addbook "Война и мир" "Лев Толстой" 1300 "Классика"\n'
-            '**Неправильно:** /addbook Война и мир Лев Толстой 1300 Классика'
-        )
-        return
-    
-    try:
-        # Удаляем команду из текста
-        args_text = full_text.replace('/addbook', '', 1).strip()
-        
-        if not args_text:
-            await update.message.reply_text("❌ Нет аргументов!")
-            return
-        
-        # ИСПРАВЛЕННЫЙ ПАРСИНГ: используем shlex для правильной обработки кавычек
+    # Если есть аргументы - пробуем добавить сразу
+    if context.args and len(context.args) >= 4:
         try:
-            parts = shlex.split(args_text)
-        except ValueError:
-            # Если ошибка в кавычках, пробуем простой сплит
-            parts = args_text.split()
-            # Убираем кавычки вручную
-            parts = [p.strip('"') for p in parts]
-        
-        # Проверяем количество аргументов
-        if len(parts) < 4:
-            await update.message.reply_text(
-                f"❌ Недостаточно аргументов! Нужно минимум 4, получено {len(parts)}.\n\n"
-                "Формат: /addbook \"Название\" \"Автор\" 300 \"Жанр\"\n"
-                f"Ваши аргументы: {parts}"
-            )
-            return
-        
-        # Извлекаем аргументы
-        title = parts[0]
-        author = parts[1]
-        
-        try:
-            pages = int(parts[2])
-            if pages <= 0:
-                await update.message.reply_text("❌ Количество страниц должно быть положительным числом!")
+            # Простой парсинг - объединяем аргументы
+            args = context.args
+            
+            # Первые 4 аргумента обязательные
+            if len(args) < 4:
+                await update.message.reply_text(
+                    "❌ Недостаточно аргументов! Нужно: название, автор, страницы, жанр\n\n"
+                    "Пример: /addbook Мастер_и_Маргарита Михаил_Булгаков 480 Классика\n\n"
+                    "Или используйте /addbook без аргументов для пошагового добавления"
+                )
                 return
-        except ValueError:
-            await update.message.reply_text("❌ Количество страниц должно быть числом!")
-            return
-        
-        genre = parts[3]
-        
-        # Описание (необязательное)
-        description = " ".join(parts[4:]) if len(parts) > 4 else ""
-        
-        # Проверяем, что название и автор не пустые
-        if not title or not author:
-            await update.message.reply_text("❌ Название и автор не могут быть пустыми!")
-            return
-        
-        # Добавляем в базу данных
-        conn = sqlite3.connect('books.db')
-        cursor = conn.cursor()
-        
-        # Проверяем, нет ли уже такой книги
-        cursor.execute('SELECT id, title, author FROM books WHERE LOWER(title) = LOWER(?) AND LOWER(author) = LOWER(?)', 
-                      (title, author))
-        existing = cursor.fetchone()
-        
-        if existing:
-            book_id, existing_title, existing_author = existing
-            await update.message.reply_text(
-                f"❌ Книга уже есть в каталоге!\n\n"
-                f"📖 ID: {book_id}\n"
-                f"📚 Название: {existing_title}\n"
-                f"👤 Автор: {existing_author}"
-            )
+            
+            # Извлекаем аргументы
+            title = args[0].replace('_', ' ').strip()
+            author = args[1].replace('_', ' ').strip()
+            
+            try:
+                pages = int(args[2])
+                if pages <= 0:
+                    await update.message.reply_text("❌ Количество страниц должно быть положительным числом!")
+                    return
+            except ValueError:
+                await update.message.reply_text("❌ Количество страниц должно быть числом!")
+                return
+            
+            genre = args[3].replace('_', ' ').strip()
+            
+            # Описание (необязательное)
+            description = ""
+            if len(args) > 4:
+                desc_parts = args[4:]
+                description = " ".join(desc_parts).replace('_', ' ').strip()
+            
+            # Проверяем, что название и автор не пустые
+            if not title or not author:
+                await update.message.reply_text("❌ Название и автор не могут быть пустыми!")
+                return
+            
+            # Добавляем в базу данных
+            conn = sqlite3.connect('books.db')
+            cursor = conn.cursor()
+            
+            # Проверяем, нет ли уже такой книги
+            cursor.execute('SELECT id FROM books WHERE LOWER(title) = LOWER(?) AND LOWER(author) = LOWER(?)', 
+                          (title, author))
+            existing = cursor.fetchone()
+            
+            if existing:
+                book_id = existing[0]
+                await update.message.reply_text(
+                    f"❌ Книга уже есть в каталоге!\n"
+                    f"ID: {book_id} - {title} ({author})\n\n"
+                    f"Добавить себе: `/add {book_id}`",
+                    parse_mode='Markdown'
+                )
+                conn.close()
+                return
+            
+            # Добавляем новую книгу
+            cursor.execute('''
+                INSERT INTO books (title, author, total_pages, genre, description)
+                VALUES (?, ?, ?, ?, ?)
+            ''', (title, author, pages, genre, description))
+            
+            book_id = cursor.lastrowid
+            conn.commit()
             conn.close()
-            return
-        
-        # Добавляем новую книгу
-        cursor.execute('''
-            INSERT INTO books (title, author, total_pages, genre, description)
-            VALUES (?, ?, ?, ?, ?)
-        ''', (title, author, pages, genre, description))
-        
-        book_id = cursor.lastrowid
-        conn.commit()
-        conn.close()
-        
-        # Показываем результат
-        await update.message.reply_text(
-            f"""✅ Книга добавлена в общий каталог!
+            
+            # Показываем результат
+            response = f"""✅ **Книга добавлена в каталог!**
 
-📖 **ID:** {book_id} (используйте этот ID для добавления книги себе)
+📖 **ID:** `{book_id}`
 📚 **Название:** {title}
 👤 **Автор:** {author}
 📄 **Страниц:** {pages}
-📂 **Жанр:** {genre}
-"""
-        )
-        
-        # Кнопки для быстрого добавления книги себе
-        keyboard = [
-            [InlineKeyboardButton("➕ Добавить эту книгу себе", callback_data=f"add_{book_id}")],
-            [InlineKeyboardButton("🔍 Найти другие книги", callback_data="search"),
-             InlineKeyboardButton("🏠 Главное меню", callback_data="main_menu")]
-        ]
-        
-        await update.message.reply_text(
-            "Хотите добавить эту книгу в свой список?",
-            reply_markup=InlineKeyboardMarkup(keyboard)
-        )
-        
-        print(f"✅ Добавлена новая книга: {title} - {author} (ID: {book_id})")
-        
-    except Exception as e:
-        await update.message.reply_text(f"❌ Ошибка при добавлении книги: {str(e)}")
-        print(f"❌ Ошибка в /addbook: {e}")
-        import traceback
-        traceback.print_exc()
+📂 **Жанр:** {genre}"""
+            
+            if description:
+                response += f"\n📝 **Описание:** {description}"
+            
+            response += f"\n\n💡 **Добавить себе:** `/add {book_id}`"
+            
+            await update.message.reply_text(response, parse_mode='Markdown')
+            
+            print(f"✅ Добавлена новая книга: '{title}' - '{author}' (ID: {book_id})")
+            
+            return
+            
+        except Exception as e:
+            await update.message.reply_text(f"❌ Ошибка: {str(e)}")
+            print(f"❌ Ошибка в /addbook (прямой вызов): {e}")
+            return
+    
+    # Если нет аргументов - начинаем пошаговое добавление
+    ADD_BOOK_STATES[user_id] = {'step': 1}
+    
+    await update.message.reply_text(
+        "📚 **Добавление новой книги в каталог**\n\n"
+        "Давайте добавим книгу по шагам!\n\n"
+        "1️⃣ Отправьте **название книги**:\n"
+        "(например: Мастер и Маргарита)"
+    )
 
 
 async def search_command(update: Update, context):
@@ -386,6 +364,171 @@ async def top_command(update: Update, context):
         return
     
     await show_top_books(update, criteria, filter_by)
+
+
+# ========== ОБРАБОТКА ТЕКСТОВЫХ СООБЩЕНИЙ ==========
+
+async def handle_text_message(update: Update, context):
+    """Обработка текстовых сообщений."""
+    user_id = update.effective_user.id
+    text = update.message.text.strip()
+    
+    # Проверяем, находится ли пользователь в процессе добавления книги
+    if user_id in ADD_BOOK_STATES:
+        state = ADD_BOOK_STATES[user_id]
+        step = state.get('step', 0)
+        
+        if step == 1:  # Ждем название
+            state['title'] = text
+            state['step'] = 2
+            ADD_BOOK_STATES[user_id] = state
+            
+            await update.message.reply_text(
+                f"✅ Название: {text}\n\n"
+                "2️⃣ Отправьте **автора книги**:\n"
+                "(например: Михаил Булгаков)"
+            )
+            
+        elif step == 2:  # Ждем автора
+            state['author'] = text
+            state['step'] = 3
+            ADD_BOOK_STATES[user_id] = state
+            
+            await update.message.reply_text(
+                f"✅ Автор: {text}\n\n"
+                "3️⃣ Отправьте **количество страниц** (только число):\n"
+                "(например: 480)"
+            )
+            
+        elif step == 3:  # Ждем количество страниц
+            try:
+                pages = int(text)
+                if pages <= 0:
+                    await update.message.reply_text("❌ Количество страниц должно быть положительным числом! Попробуйте снова:")
+                    return
+                
+                state['pages'] = pages
+                state['step'] = 4
+                ADD_BOOK_STATES[user_id] = state
+                
+                await update.message.reply_text(
+                    f"✅ Страниц: {pages}\n\n"
+                    "4️⃣ Отправьте **жанр книги**:\n"
+                    "(например: Классика, Фэнтези, Детектив)"
+                )
+            except ValueError:
+                await update.message.reply_text("❌ Количество страниц должно быть числом! Попробуйте снова:")
+                
+        elif step == 4:  # Ждем жанр
+            state['genre'] = text
+            state['step'] = 5
+            ADD_BOOK_STATES[user_id] = state
+            
+            await update.message.reply_text(
+                f"✅ Жанр: {text}\n\n"
+                "5️⃣ Отправьте **описание книги** (можно пропустить, отправив '-'):\n"
+                "(например: Роман о писателе и его возлюбленной)"
+            )
+            
+        elif step == 5:  # Ждем описание
+            description = "" if text == "-" else text
+            
+            # Получаем все данные
+            title = state['title']
+            author = state['author']
+            pages = state['pages']
+            genre = state['genre']
+            
+            # Удаляем состояние
+            del ADD_BOOK_STATES[user_id]
+            
+            # Добавляем книгу в базу
+            try:
+                conn = sqlite3.connect('books.db')
+                cursor = conn.cursor()
+                
+                # Проверяем, нет ли уже такой книги
+                cursor.execute('SELECT id FROM books WHERE LOWER(title) = LOWER(?) AND LOWER(author) = LOWER(?)', 
+                              (title, author))
+                existing = cursor.fetchone()
+                
+                if existing:
+                    book_id = existing[0]
+                    await update.message.reply_text(
+                        f"❌ Книга уже есть в каталоге!\n"
+                        f"ID: {book_id} - {title} ({author})\n\n"
+                        f"Добавить себе: `/add {book_id}`",
+                        parse_mode='Markdown'
+                    )
+                    conn.close()
+                    return
+                
+                # Добавляем новую книгу
+                cursor.execute('''
+                    INSERT INTO books (title, author, total_pages, genre, description)
+                    VALUES (?, ?, ?, ?, ?)
+                ''', (title, author, pages, genre, description))
+                
+                book_id = cursor.lastrowid
+                conn.commit()
+                conn.close()
+                
+                # Показываем результат
+                response = f"""✅ **Книга добавлена в каталог!**
+
+📖 **ID:** `{book_id}`
+📚 **Название:** {title}
+👤 **Автор:** {author}
+📄 **Страниц:** {pages}
+📂 **Жанр:** {genre}"""
+                
+                if description:
+                    response += f"\n📝 **Описание:** {description}"
+                
+                response += f"\n\n💡 **Добавить себе:** `/add {book_id}`"
+                
+                await update.message.reply_text(response, parse_mode='Markdown')
+                
+                print(f"✅ Добавлена новая книга (пошагово): '{title}' - '{author}' (ID: {book_id})")
+                
+            except Exception as e:
+                await update.message.reply_text(f"❌ Ошибка при добавлении книги: {str(e)}")
+                print(f"❌ Ошибка в пошаговом добавлении книги: {e}")
+        
+        return
+    
+    # Если это не пошаговое добавление книги, делаем обычный поиск
+    if len(text) >= 2:
+        books = book_manager.search_books(text, limit=5)
+        
+        if not books:
+            keyboard = [
+                [InlineKeyboardButton("🔍 Попробовать другой", callback_data="search"),
+                 InlineKeyboardButton("🏠 Главное меню", callback_data="main_menu")]
+            ]
+            
+            await update.message.reply_text(f"По запросу '{text}' ничего не найдено.", reply_markup=InlineKeyboardMarkup(keyboard))
+            return
+        
+        message = f"🔍 Найдено по запросу '{text}':\n"
+        
+        keyboard_buttons = []
+        for i, book in enumerate(books, 1):
+            stats = db.get_book_stats(book.id)
+            rating = f" ⭐{stats['avg_rating']:.1f}" if stats['avg_rating'] > 0 else ""
+            
+            message += f"\n{i}. {book.title}"
+            message += f"\n   👤 {book.author}{rating} (ID: {book.id})"
+            
+            short = book.title[:12] + "..." if len(book.title) > 12 else book.title
+            keyboard_buttons.append([
+                InlineKeyboardButton(f"➕ Добавить '{short}'", callback_data=f"add_{book.id}")
+            ])
+        
+        keyboard_buttons.append([InlineKeyboardButton("🔍 Новый поиск", callback_data="search")])
+        keyboard_buttons.append([InlineKeyboardButton("🏠 Главное меню", callback_data="main_menu")])
+        
+        await update.message.reply_text(message, reply_markup=InlineKeyboardMarkup(keyboard_buttons))
 
 
 # ========== КНОПКИ ==========
@@ -991,43 +1134,6 @@ async def show_top_books(upd, criteria, filter_by=""):
         await upd.message.reply_text(message, reply_markup=InlineKeyboardMarkup(keyboard_buttons))
 
 
-async def text_message_handler(update: Update, context):
-    text = update.message.text.strip()
-    
-    if len(text) < 2:
-        return
-    
-    books = book_manager.search_books(text)
-    
-    if not books:
-        keyboard = [
-            [InlineKeyboardButton("🔍 Попробовать другой", callback_data="search"),
-             InlineKeyboardButton("🏠 Главное меню", callback_data="main_menu")]
-        ]
-        
-        await update.message.reply_text(f"По '{text}' ничего не найдено.", reply_markup=InlineKeyboardMarkup(keyboard))
-        return
-    
-    message = f"🔍 Найдено по '{text}':\n"
-    
-    keyboard_buttons = []
-    for i, book in enumerate(books[:5], 1):
-        stats = db.get_book_stats(book.id)
-        rating = f" ⭐{stats['avg_rating']:.1f}" if stats['avg_rating'] > 0 else ""
-        
-        message += f"\n{i}. {book.title} - {book.author}{rating} (ID: {book.id})"
-        
-        short = book.title[:12] + "..." if len(book.title) > 12 else book.title
-        keyboard_buttons.append([
-            InlineKeyboardButton(f"➕ Добавить '{short}'", callback_data=f"add_{book.id}")
-        ])
-    
-    keyboard_buttons.append([InlineKeyboardButton("🔍 Новый поиск", callback_data="search")])
-    keyboard_buttons.append([InlineKeyboardButton("🏠 Главное меню", callback_data="main_menu")])
-    
-    await update.message.reply_text(message, reply_markup=InlineKeyboardMarkup(keyboard_buttons))
-
-
 async def error_handler(update: Update, context):
     try:
         keyboard = [
@@ -1062,8 +1168,8 @@ def main():
     # Кнопки
     app.add_handler(CallbackQueryHandler(button_handler))
     
-    # Текст
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, text_message_handler))
+    # Текст (заменяем старый обработчик на новый)
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text_message))
     
     # Ошибки
     app.add_error_handler(error_handler)
