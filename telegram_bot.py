@@ -521,7 +521,7 @@ def main():
     
     # Проверка токена
     if "ВАШ_ТОКЕН" in TOKEN or len(TOKEN) < 30:
-        print("ОШИБКА: Вставьте свой токен от @BotFather!")
+        print("❌ ОШИБКА: Вставьте свой токен от @BotFather!")
         print("   Получите токен: 1) Найти @BotFather 2) /newbot 3) Скопировать токен")
         return
     
@@ -530,4 +530,26 @@ def main():
     
     # Добавляем обработчики команд
     application.add_handler(CommandHandler("start", start))
-    application.add_handler(CommandHandler("mybooks", mybooks
+    application.add_handler(CommandHandler("mybooks", mybooks))
+    application.add_handler(CommandHandler("add", add_book))
+    application.add_handler(CommandHandler("search", search_books))
+    application.add_handler(CommandHandler("read", start_reading))
+    application.add_handler(CommandHandler("progress", update_progress))
+    application.add_handler(CommandHandler("finish", finish_reading))
+    application.add_handler(CommandHandler("rate", rate_book))
+    application.add_handler(CommandHandler("stats", show_stats))
+    application.add_handler(CommandHandler("remove", remove_book))
+    application.add_handler(CommandHandler("help", help_command))
+    
+    # Обработчик инлайн-кнопок
+    application.add_handler(CallbackQueryHandler(button_handler))
+    
+    # Обработчик текстовых сообщений
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
+    
+    # Обработчик ошибок
+    application.add_error_handler(error_handler)
+ 
+
+if __name__ == '__main__':
+    main()
