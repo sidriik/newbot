@@ -1,14 +1,6 @@
-"""
-models.py - управление данными пользователей в оперативной памяти
-Быстрое хранение статусов чтения и оценок
-"""
-
 class UserManager:
-    """Класс для управления книгами пользователей в памяти"""
-    
     def __init__(self):
-        # user_id: {book_id: {'status': str, 'rating': int, 'current_page': int}}
-        self.users = {}
+        self.users = {}  # {user_id: {book_id: {'status': str, 'rating': int, 'current_page': int}}}
     
     def add_book(self, user_id, book_id, status='planned'):
         """Добавляет книгу пользователю"""
@@ -26,7 +18,7 @@ class UserManager:
             return False
     
     def update_book_status(self, user_id, book_id, new_status):
-        """Обновляет статус чтения книги"""
+        """Обновляет статус книги"""
         if user_id in self.users and book_id in self.users[user_id]:
             allowed_status = ["planned", "reading", "completed", "dropped"]
             if new_status in allowed_status:
@@ -42,7 +34,7 @@ class UserManager:
         return False
     
     def rate_book(self, user_id, book_id, rating):
-        """Ставит оценку книге"""
+        """Оценивает книгу"""
         if user_id in self.users and book_id in self.users[user_id]:
             if 1 <= rating <= 5:
                 self.users[user_id][book_id]['rating'] = rating
@@ -50,7 +42,7 @@ class UserManager:
         return False
     
     def get_user_books(self, user_id, status=None):
-        """Получает книги пользователя с фильтром по статусу"""
+        """Получает книги пользователя"""
         if user_id not in self.users:
             return []
         
@@ -73,11 +65,11 @@ class UserManager:
         return False
     
     def has_book(self, user_id, book_id):
-        """Проверяет, есть ли книга у пользователя"""
+        """Проверяет, есть ли книга"""
         return user_id in self.users and book_id in self.users[user_id]
     
     def get_book_info(self, user_id, book_id):
-        """Получает информацию о конкретной книге пользователя"""
+        """Получает информацию о книге"""
         if self.has_book(user_id, book_id):
             return self.users[user_id][book_id]
         return None
