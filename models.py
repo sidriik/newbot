@@ -200,3 +200,9 @@ class UserManager:
         except Exception as e:
             print(f"Ошибка расчета прогресса чтения: {e}")
             return 0.0
+    def get_or_create_user(self, telegram_id, username=None, first_name=None):
+    try:
+        return self.db.get_or_create_user(telegram_id, username, first_name)
+    except Exception as e:
+        print(f"Ошибка создания пользователя: {e}")
+        return 0
