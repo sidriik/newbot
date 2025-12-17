@@ -119,7 +119,7 @@ async def progress_command(update: Update, context):
 
 Страниц: {page}/{book.total_pages} (100%)"""
             keyboard = [[
-                InlineKeyboardButton("⭐ Оценить", callback_data=f"rate_{book_id}"),
+                InlineKeyboardButton("⭐ Оценить книгу", callback_data=f"ratebook_{book_id}"),
                 InlineKeyboardButton("📚 Мои книги", callback_data="mybooks")
             ]]
         else:
@@ -382,7 +382,7 @@ async def button_handler(update: Update, context):
         keyboard_buttons = []
         for book in planned[:5]:
             keyboard_buttons.append([
-                InlineKeyboardButton(f"📖 {book.title[:15]}...", callback_data=f"read_{book.book_id}")
+                InlineKeyboardButton(f"📖 {book.title[:15]}...", callback_data=f"start_{book.book_id}")
             ])
         
         keyboard_buttons.append([InlineKeyboardButton("📚 Все книги", callback_data="mybooks")])
@@ -413,7 +413,7 @@ async def button_handler(update: Update, context):
         
         await query.edit_message_text(message, reply_markup=InlineKeyboardMarkup(keyboard))
     
-    # Оценить книгу
+    # Оценить книгу (из меню)
     elif data == "rate_book":
         completed = user_manager.get_user_books(user_db_id, "completed")
         
@@ -434,15 +434,72 @@ async def button_handler(update: Update, context):
                     InlineKeyboardButton(f"⭐ {book.rating}/5 - {book.title[:10]}...", callback_data="no_action")
                 ])
             else:
-                row = []
-                for r in range(1, 6):
-                    row.append(InlineKeyboardButton(f"{r}⭐", callback_data=f"rate_{book.book_id}_{r}"))
-                keyboard_buttons.append(row)
+                keyboard_buttons.append([
+                    InlineKeyboardButton(f"📖 {book.title[:15]}...", callback_data=f"rateshow_{book.book_id}")
+                ])
         
         keyboard_buttons.append([InlineKeyboardButton("📚 Мои книги", callback_data="mybooks")])
         keyboard_buttons.append([InlineKeyboardButton("🔙 Назад", callback_data="main_menu")])
         
-        await query.edit_message_text("⭐ Оцени прочитанные книги:", reply_markup=InlineKeyboardMarkup(keyboard_buttons))
+        await query.edit_message_text("⭐ Выбери книгу для оценки:", reply_markup=InlineKeyboardMarkup(keyboard_buttons))
+    
+    # Показать оценки для конкретной книги
+    elif data.startswith("rateshow_"):
+        try:
+            book_id = int(data.replace("rateshow_", ""))
+            book = book_manager.get_book(book_id)
+            
+            if not book:
+                await query.edit_message_text("❌ Книга не найдена.", reply_markup=InlineKeyboardMarkup([
+                    [InlineKeyboardButton("🔙 Назад", callback_data="rate_book")]
+                ]))
+                return
+            
+            keyboard_buttons = []
+            row = []
+            for r in range(1, 6):
+                row.append(InlineKeyboardButton(f"{r}⭐", callback_data=f"rate_{book_id}_{r}"))
+            keyboard_buttons.append(row)
+            
+            keyboard_buttons.append([InlineKeyboardButton("🔙 Назад", callback_data="rate_book")])
+            
+            await query.edit_message_text(
+                f"⭐ Оцени книгу:\n\n{book.title}\n👤 {book.author}",
+                reply_markup=InlineKeyboardMarkup(keyboard_buttons)
+            )
+        except:
+            await query.edit_message_text("❌ Ошибка.", reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton("🔙 Назад", callback_data="rate_book")]
+            ]))
+    
+    # Оценить книгу после прочтения
+    elif data.startswith("ratebook_"):
+        try:
+            book_id = int(data.replace("ratebook_", ""))
+            book = book_manager.get_book(book_id)
+            
+            if not book:
+                await query.edit_message_text("❌ Книга не найдена.", reply_markup=InlineKeyboardMarkup([
+                    [InlineKeyboardButton("🔙 Назад", callback_data="mybooks")]
+                ]))
+                return
+            
+            keyboard_buttons = []
+            row = []
+            for r in range(1, 6):
+                row.append(InlineKeyboardButton(f"{r}⭐", callback_data=f"rate_{book_id}_{r}"))
+            keyboard_buttons.append(row)
+            
+            keyboard_buttons.append([InlineKeyboardButton("🔙 Назад", callback_data="mybooks")])
+            
+            await query.edit_message_text(
+                f"⭐ Оцени прочитанную книгу:\n\n{book.title}\n👤 {book.author}",
+                reply_markup=InlineKeyboardMarkup(keyboard_buttons)
+            )
+        except:
+            await query.edit_message_text("❌ Ошибка.", reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton("🔙 Назад", callback_data="mybooks")]
+            ]))
     
     # Помощь
     elif data == "help":
@@ -494,7 +551,7 @@ async def button_handler(update: Update, context):
             
             if user_manager.add_book(user_db_id, book_id, "planned"):
                 keyboard = [
-                    [InlineKeyboardButton("📖 Начать читать", callback_data=f"read_{book_id}"),
+                    [InlineKeyboardButton("📖 Начать читать", callback_data=f"start_{book_id}"),
                      InlineKeyboardButton("📚 Мои книги", callback_data="mybooks")],
                     [InlineKeyboardButton("➕ Добавить еще", callback_data="add_book"),
                      InlineKeyboardButton("🔙 Назад", callback_data="main_menu")]
@@ -522,9 +579,9 @@ async def button_handler(update: Update, context):
             ]))
     
     # Начать читать конкретную книгу
-    elif data.startswith("read_"):
+    elif data.startswith("start_"):
         try:
-            book_id = int(data.replace("read_", ""))
+            book_id = int(data.replace("start_", ""))
             
             if not user_manager.has_book(user_db_id, book_id):
                 await query.edit_message_text("❌ У тебя нет этой книги.", reply_markup=InlineKeyboardMarkup([
@@ -562,7 +619,7 @@ async def button_handler(update: Update, context):
                 [InlineKeyboardButton("🔙 Назад", callback_data="start_reading")]
             ]))
     
-    # Оценить книгу
+    # Оценить книгу (поставить оценку)
     elif data.startswith("rate_"):
         try:
             parts = data.replace("rate_", "").split("_")
@@ -625,7 +682,7 @@ async def button_handler(update: Update, context):
                 book = book_manager.get_book(book_id)
                 
                 keyboard = [
-                    [InlineKeyboardButton("⭐ Оценить", callback_data=f"rate_{book_id}"),
+                    [InlineKeyboardButton("⭐ Оценить книгу", callback_data=f"ratebook_{book_id}"),
                      InlineKeyboardButton("📚 Мои книги", callback_data="mybooks")],
                     [InlineKeyboardButton("🔙 Назад", callback_data="main_menu")]
                 ]
