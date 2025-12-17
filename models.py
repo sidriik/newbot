@@ -1,137 +1,129 @@
 """
-models.py - управление пользовательскими данными в оперативной памяти
+models.py - управление пользователями, книгами и статусами чтения
 """
 
 class UserManager:
-    """
-    Управление книгами пользователей в оперативной памяти.
-    Быстро, но данные теряются при перезапуске бота.
-    """
+    """Класс для управления книгами пользователей с функцией чтения"""
     
     def __init__(self):
-        self.users = {}  # {user_id: {book_id: {'status': str, 'rating': int}}}
+        self.users = {}  # {user_id: {book_id: {'status': str, 'rating': int, 'current_page': int}}}
     
     def add_book(self, user_id, book_id, status='planned'):
-        """Добавляет книгу пользователю."""
+        """Добавляет книгу пользователю"""
         try:
-            allowed_status = ["planned", "reading", "completed", "dropped"]
-            if status not in allowed_status:
-                return False
-            
             if user_id not in self.users:
                 self.users[user_id] = {}
             
             self.users[user_id][book_id] = {
                 'status': status,
-                'rating': None
+                'rating': None,
+                'current_page': 0
             }
             return True
-        except Exception as e:
-            print(f"[MODELS ERROR] add_book: {e}")
+        except:
             return False
     
-    def update_status(self, user_id, book_id, new_status):
-        """Обновляет статус книги."""
-        try:
-            if user_id in self.users and book_id in self.users[user_id]:
+    def update_book_status(self, user_id, book_id, new_status):
+        """Обновляет статус чтения книги"""
+        if user_id in self.users and book_id in self.users[user_id]:
+            allowed_status = ["planned", "reading", "completed", "dropped"]
+            if new_status in allowed_status:
                 self.users[user_id][book_id]['status'] = new_status
                 return True
-            return False
-        except Exception as e:
-            print(f"[MODELS ERROR] update_status: {e}")
-            return False
+        return False
     
-    def rate_book(self, user_id, book_id, rating):
-        """Ставит оценку книге."""
-        try:
-            if rating < 1 or rating > 5:
-                return False
-            if user_id in self.users and book_id in self.users[user_id]:
-                self.users[user_id][book_id]['rating'] = rating
-                return True
-            return False
-        except Exception as e:
-            print(f"[MODELS ERROR] rate_book: {e}")
-            return False
+    def update_progress(self, user_id, book_id, current_page):
+        """Обновляет текущую страницу"""
+        if user_id in self.users and book_id in self.users[user_id]:
+            self.users[user_id][book_id]['current_page'] = current_page
+            return True
+        return False
     
     def get_user_books(self, user_id, status=None):
-        """Получает книги пользователя."""
-        try:
-            if user_id not in self.users:
-                return []
-            
-            books = []
-            for book_id, data in self.users[user_id].items():
-                if status is None or data['status'] == status:
-                    books.append({
-                        'book_id': book_id,
-                        'status': data['status'],
-                        'rating': data['rating']
-                    })
-            return books
-        except Exception as e:
-            print(f"[MODELS ERROR] get_user_books: {e}")
+        """Получает книги пользователя с фильтром по статусу"""
+        if user_id not in self.users:
             return []
+        
+        books = []
+        for book_id, data in self.users[user_id].items():
+            if status is None or data['status'] == status:
+                books.append({
+                    'book_id': book_id,
+                    'status': data['status'],
+                    'rating': data['rating'],
+                    'current_page': data['current_page']
+                })
+        return books
+    
+    def rate_book(self, user_id, book_id, rating):
+        """Ставит оценку книге"""
+        if user_id in self.users and book_id in self.users[user_id]:
+            if 1 <= rating <= 5:
+                self.users[user_id][book_id]['rating'] = rating
+                return True
+        return False
     
     def remove_book(self, user_id, book_id):
-        """Удаляет книгу."""
-        try:
-            if user_id in self.users and book_id in self.users[user_id]:
-                del self.users[user_id][book_id]
-                if not self.users[user_id]:
-                    del self.users[user_id]
-                return True
-            return False
-        except Exception as e:
-            print(f"[MODELS ERROR] remove_book: {e}")
-            return False
-    
-    def has_book(self, user_id, book_id):
-        """Проверяет, есть ли книга."""
-        try:
-            return user_id in self.users and book_id in self.users[user_id]
-        except:
-            return False
+        """Удаляет книгу"""
+        if user_id in self.users and book_id in self.users[user_id]:
+            del self.users[user_id][book_id]
+            return True
+        return False
     
     def get_stats(self, user_id):
-        """Статистика пользователя."""
-        try:
-            stats = {'total': 0, 'planned': 0, 'reading': 0, 
-                     'completed': 0, 'dropped': 0, 'avg_rating': 0.0}
+        """Статистика пользователя"""
+        if user_id not in self.users:
+            return {
+                'total': 0, 
+                'planned': 0, 
+                'reading': 0, 
+                'completed': 0, 
+                'dropped': 0, 
+                'avg_rating': 0.0,
+                'currently_reading': 0,
+                'total_pages': 0
+            }
+        
+        books = self.users[user_id]
+        stats = {
+            'total': len(books), 
+            'planned': 0, 
+            'reading': 0, 
+            'completed': 0, 
+            'dropped': 0, 
+            'avg_rating': 0.0,
+            'currently_reading': 0,
+            'total_pages': 0
+        }
+        
+        total_rating = 0
+        rated_count = 0
+        
+        for data in books.values():
+            status = data['status']
+            if status in stats:
+                stats[status] += 1
             
-            if user_id not in self.users:
-                return stats
+            if data['rating'] is not None:
+                total_rating += data['rating']
+                rated_count += 1
             
-            books = self.users[user_id]
-            stats['total'] = len(books)
-            
-            total_rating = 0
-            rated_count = 0
-            
-            for data in books.values():
-                status = data['status']
-                if status in stats:
-                    stats[status] += 1
-                
-                if data['rating'] is not None:
-                    total_rating += data['rating']
-                    rated_count += 1
-            
-            if rated_count > 0:
-                stats['avg_rating'] = round(total_rating / rated_count, 2)
-            
-            return stats
-        except Exception as e:
-            print(f"[MODELS ERROR] get_stats: {e}")
-            return {'total': 0, 'planned': 0, 'reading': 0, 
-                    'completed': 0, 'dropped': 0, 'avg_rating': 0.0}
+            if data['current_page']:
+                stats['total_pages'] += data['current_page']
+        
+        if rated_count > 0:
+            stats['avg_rating'] = round(total_rating / rated_count, 2)
+        
+        stats['currently_reading'] = stats['reading']
+        
+        return stats
     
-    def clear_user(self, user_id):
-        """Очищает все книги пользователя."""
-        try:
-            if user_id in self.users:
-                del self.users[user_id]
-                return True
-            return False
-        except:
-            return False
+    def has_book(self, user_id, book_id):
+        """Проверяет, есть ли книга у пользователя"""
+        return user_id in self.users and book_id in self.users[user_id]
+    
+    def get_book_info(self, user_id, book_id):
+        """Получает информацию о конкретной книге пользователя"""
+        if self.has_book(user_id, book_id):
+            return self.users[user_id][book_id]
+        return None

@@ -1,17 +1,14 @@
 #!/usr/bin/env python3
 """
-telegram_bot.py - главный файл Telegram бота
+telegram_bot.py - Telegram бот для учета книг с функцией чтения
 """
 
 import logging
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import (
-    Application, CommandHandler, MessageHandler, CallbackQueryHandler,
-    filters, ContextTypes
-)
+from telegram import Update
+from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
+
 from models import UserManager
 from database import db
-import html
 
 # Настройка логирования
 logging.basicConfig(
@@ -21,55 +18,60 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Создаем менеджеры
-user_manager = UserManager()  # Для пользовательских данных в памяти
-book_db = db                  # Для каталога книг в SQLite
+user_manager = UserManager()
+book_db = db
 
 # ==================== КОМАНДЫ БОТА ====================
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Обработчик команды /start."""
+    """Команда /start"""
     user = update.effective_user
-    welcome_text = (
-        f"📚 *Добро пожаловать, {user.first_name}!*\n\n"
-        "Я — BookBot, ваш помощник в учёте прочитанных книг.\n\n"
-        "*Основные команды:*\n"
-        "• /mybooks — Мои книги\n"
-        "• /add <id> — Добавить книгу\n"
-        "• /search <название> — Найти книгу\n"
-        "• /rate <id> <1-5> — Оценить книгу\n"
-        "• /stats — Статистика\n"
-        "• /remove <id> — Удалить книгу\n"
-        "• /help — Справка\n\n"
-        "Просто напишите название книги для поиска!"
-    )
     
-    keyboard = [
-        [InlineKeyboardButton("📖 Мои книги", callback_data="mybooks")],
-        [InlineKeyboardButton("🔍 Поиск", callback_data="search")],
-        [InlineKeyboardButton("📊 Статистика", callback_data="stats")],
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
+    welcome_text = f"""
+📚 Привет, {user.first_name}!
+
+Я — BookBot, твой помощник в учёте прочитанных книг.
+
+📖 Основные команды:
+/mybooks - Мои книги
+/add <id> - Добавить книгу
+/search <название> - Найти книгу
+/read <id> - Начать читать книгу
+/progress <id> <страница> - Обновить прогресс
+/finish <id> - Закончить чтение
+/rate <id> <1-5> - Оценить книгу
+/stats - Статистика
+/remove <id> - Удалить книгу
+/help - Справка
+
+Просто напиши название книги для поиска!
+"""
     
-    await update.message.reply_text(welcome_text, 
-                                   parse_mode='Markdown',
-                                   reply_markup=reply_markup)
+    await update.message.reply_text(welcome_text)
 
 async def mybooks(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Показывает книги пользователя."""
+    """Команда /mybooks - показывает книги пользователя"""
     user_id = update.effective_user.id
-    stats = user_manager.get_stats(user_id)
+    books = user_manager.get_user_books(user_id)
     
-    if stats['total'] == 0:
-        await update.message.reply_text(
-            "📭 *У вас пока нет книг в коллекции.*\n\n"
-            "Чтобы добавить книгу:\n"
-            "1. Найдите книгу через /search\n"
-            "2. Используйте /add <id_книги>",
-            parse_mode='Markdown'
-        )
+    if not books:
+        await update.message.reply_text("📭 У вас пока нет книг в коллекции.")
         return
     
-    # Получаем книги по статусам
+    # Группируем книги по статусу
+    books_by_status = {
+        'planned': [], 
+        'reading': [], 
+        'completed': [], 
+        'dropped': []
+    }
+    
+    for book in books:
+        books_by_status[book['status']].append(book)
+    
+    # Формируем сообщение
+    message_parts = ["📚 Ваша библиотека:\n"]
+    
     status_names = {
         'planned': '📅 Запланировано',
         'reading': '📖 Читаю сейчас',
@@ -77,150 +79,203 @@ async def mybooks(update: Update, context: ContextTypes.DEFAULT_TYPE):
         'dropped': '❌ Брошено'
     }
     
-    message_lines = [f"📚 *Ваша библиотека* ({stats['total']} книг):\n"]
-    
-    for status_code, status_name in status_names.items():
-        books = user_manager.get_user_books(user_id, status_code)
-        if books:
-            message_lines.append(f"\n*{status_name}* ({len(books)}):")
-            for i, book in enumerate(books[:5], 1):  # Показываем первые 5
+    for status, status_books in books_by_status.items():
+        if status_books:
+            message_parts.append(f"\n{status_names[status]}:")
+            for book in status_books[:5]:
                 book_info = book_db.get_book(book['book_id'])
                 if book_info:
                     title = book_info['title']
-                    rating = f" ⭐ {book['rating']}" if book['rating'] else ""
-                    message_lines.append(f"{i}. {title}{rating}")
+                    
+                    # Для читаемых книг показываем прогресс
+                    if status == 'reading' and book['current_page'] > 0:
+                        progress = (book['current_page'] / book_info['total_pages']) * 100
+                        message_parts.append(f"• {title} - стр. {book['current_page']} ({progress:.1f}%)")
+                    else:
+                        rating = f" ⭐ {book['rating']}" if book['rating'] else ""
+                        message_parts.append(f"• {title}{rating}")
     
-    if stats['avg_rating'] > 0:
-        message_lines.append(f"\n📈 *Средняя оценка:* {stats['avg_rating']}")
-    
-    await update.message.reply_text(
-        "\n".join(message_lines),
-        parse_mode='Markdown'
-    )
+    await update.message.reply_text("\n".join(message_parts))
 
 async def add_book(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Добавляет книгу в коллекцию."""
+    """Команда /add <id> - добавляет книгу"""
     if not context.args:
-        await update.message.reply_text(
-            "📝 *Использование:* /add <id_книги> [статус]\n\n"
-            "*Статусы:*\n"
-            "• planned — Запланировано\n"
-            "• reading — Читаю сейчас\n"
-            "• completed — Прочитано\n"
-            "• dropped — Брошено\n\n"
-            "*Пример:*\n"
-            "/add 123 reading",
-            parse_mode='Markdown'
-        )
+        await update.message.reply_text("📝 Использование: /add <id_книги>\nПример: /add 1")
         return
     
     try:
         user_id = update.effective_user.id
         book_id = int(context.args[0])
-        status = context.args[1] if len(context.args) > 1 else "planned"
-        
-        if status not in ['planned', 'reading', 'completed', 'dropped']:
-            await update.message.reply_text(
-                "❌ *Неверный статус.* Используйте: planned, reading, completed, dropped",
-                parse_mode='Markdown'
-            )
-            return
         
         # Проверяем, существует ли книга
         book_info = book_db.get_book(book_id)
         if not book_info:
-            await update.message.reply_text(
-                f"❌ *Книга с ID {book_id} не найдена.*\n"
-                "Используйте /search чтобы найти книги.",
-                parse_mode='Markdown'
-            )
+            await update.message.reply_text(f"❌ Книга с ID {book_id} не найдена.")
             return
         
         # Добавляем книгу
-        if user_manager.add_book(user_id, book_id, status):
-            status_emoji = {
-                'planned': '📅',
-                'reading': '📖', 
-                'completed': '✅',
-                'dropped': '❌'
-            }
+        if user_manager.add_book(user_id, book_id):
             await update.message.reply_text(
-                f"{status_emoji[status]} *Книга добавлена!*\n\n"
-                f"*{book_info['title']}*\n"
-                f"Автор: {book_info['author']}\n"
-                f"Статус: {status}",
-                parse_mode='Markdown'
+                f"✅ Книга добавлена в коллекцию!\n\n"
+                f"📖 {book_info['title']}\n"
+                f"👤 {book_info['author']}\n"
+                f"📄 Страниц: {book_info['total_pages']}\n"
+                f"📂 Статус: запланировано\n\n"
+                f"Чтобы начать читать: /read {book_id}"
             )
         else:
-            await update.message.reply_text(
-                "❌ *Не удалось добавить книгу.*",
-                parse_mode='Markdown'
-            )
+            await update.message.reply_text("❌ Не удалось добавить книгу.")
     
     except ValueError:
-        await update.message.reply_text(
-            "❌ *ID книги должен быть числом.*",
-            parse_mode='Markdown'
-        )
-    except Exception as e:
-        logger.error(f"Error in add_book: {e}")
-        await update.message.reply_text(
-            "❌ *Произошла ошибка.* Попробуйте еще раз.",
-            parse_mode='Markdown'
-        )
+        await update.message.reply_text("❌ ID книги должен быть числом.")
+
+async def start_reading(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Команда /read <id> - начать читать книгу"""
+    if not context.args:
+        await update.message.reply_text("📖 Использование: /read <id_книги>\nПример: /read 1")
+        return
+    
+    try:
+        user_id = update.effective_user.id
+        book_id = int(context.args[0])
+        
+        # Проверяем, есть ли книга у пользователя
+        if not user_manager.has_book(user_id, book_id):
+            await update.message.reply_text("❌ У вас нет этой книги в коллекции.")
+            return
+        
+        # Меняем статус на "читаю"
+        if user_manager.update_book_status(user_id, book_id, "reading"):
+            book_info = book_db.get_book(book_id)
+            await update.message.reply_text(
+                f"📖 Начинаем читать!\n\n"
+                f"{book_info['title']}\n"
+                f"Автор: {book_info['author']}\n"
+                f"Всего страниц: {book_info['total_pages']}\n\n"
+                f"Чтобы обновить прогресс: /progress {book_id} <номер_страницы>"
+            )
+        else:
+            await update.message.reply_text("❌ Не удалось начать чтение.")
+    
+    except ValueError:
+        await update.message.reply_text("❌ ID книги должен быть числом.")
+
+async def update_progress(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Команда /progress <id> <страница> - обновить прогресс чтения"""
+    if len(context.args) != 2:
+        await update.message.reply_text("📊 Использование: /progress <id_книги> <номер_страницы>\nПример: /progress 1 150")
+        return
+    
+    try:
+        user_id = update.effective_user.id
+        book_id = int(context.args[0])
+        current_page = int(context.args[1])
+        
+        # Проверяем, есть ли книга и читается ли она
+        book_user_info = user_manager.get_book_info(user_id, book_id)
+        if not book_user_info:
+            await update.message.reply_text("❌ У вас нет этой книги в коллекции.")
+            return
+        
+        if book_user_info['status'] != 'reading':
+            await update.message.reply_text("❌ Эту книгу вы сейчас не читаете.")
+            return
+        
+        book_info = book_db.get_book(book_id)
+        
+        # Проверяем, что страница не больше общего количества
+        if current_page > book_info['total_pages']:
+            await update.message.reply_text(f"❌ В этой книге только {book_info['total_pages']} страниц!")
+            return
+        
+        # Обновляем прогресс
+        if user_manager.update_progress(user_id, book_id, current_page):
+            progress = (current_page / book_info['total_pages']) * 100
+            
+            if progress >= 100:
+                message = f"🎉 Поздравляем! Вы прочитали книгу!\n\n"
+                message += f"{book_info['title']}\n"
+                message += f"Прогресс: {current_page}/{book_info['total_pages']} страниц (100%)\n\n"
+                message += f"Чтобы отметить как прочитанную: /finish {book_id}"
+            else:
+                message = f"📖 Прогресс обновлен!\n\n"
+                message += f"{book_info['title']}\n"
+                message += f"Страница: {current_page} из {book_info['total_pages']}\n"
+                message += f"Прогресс: {progress:.1f}%"
+            
+            await update.message.reply_text(message)
+        else:
+            await update.message.reply_text("❌ Не удалось обновить прогресс.")
+    
+    except ValueError:
+        await update.message.reply_text("❌ ID книги и номер страницы должны быть числами.")
+
+async def finish_reading(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Команда /finish <id> - закончить чтение книги"""
+    if not context.args:
+        await update.message.reply_text("✅ Использование: /finish <id_книги>\nПример: /finish 1")
+        return
+    
+    try:
+        user_id = update.effective_user.id
+        book_id = int(context.args[0])
+        
+        # Проверяем, есть ли книга
+        if not user_manager.has_book(user_id, book_id):
+            await update.message.reply_text("❌ У вас нет этой книги в коллекции.")
+            return
+        
+        # Меняем статус на "прочитано"
+        if user_manager.update_book_status(user_id, book_id, "completed"):
+            book_info = book_db.get_book(book_id)
+            book_user_info = user_manager.get_book_info(user_id, book_id)
+            
+            message = f"🎉 Поздравляем с прочтением!\n\n"
+            message += f"{book_info['title']}\n"
+            message += f"Автор: {book_info['author']}\n"
+            
+            if book_user_info['current_page'] > 0:
+                message += f"Прочитано страниц: {book_user_info['current_page']}\n"
+            
+            message += f"\nТеперь можете оценить книгу: /rate {book_id} <1-5>"
+            
+            await update.message.reply_text(message)
+        else:
+            await update.message.reply_text("❌ Не удалось отметить как прочитанную.")
+    
+    except ValueError:
+        await update.message.reply_text("❌ ID книги должен быть числом.")
 
 async def search_books(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Поиск книг в каталоге."""
+    """Команда /search <запрос> - поиск книг"""
     if not context.args:
-        await update.message.reply_text(
-            "🔍 *Использование:* /search <название или автор>\n\n"
-            "*Примеры:*\n"
-            "/search Гарри Поттер\n"
-            "/search Достоевский",
-            parse_mode='Markdown'
-        )
+        await update.message.reply_text("🔍 Использование: /search <запрос>\nПример: /search Гарри Поттер")
         return
     
     query = " ".join(context.args)
     books = book_db.search_books(query)
     
     if not books:
-        await update.message.reply_text(
-            f"🔍 *По запросу '{query}' ничего не найдено.*",
-            parse_mode='Markdown'
-        )
+        await update.message.reply_text(f"🔍 По запросу '{query}' ничего не найдено.")
         return
     
     # Формируем ответ
-    message_lines = [f"🔍 *Найдено книг:* {len(books)}\n"]
+    message_parts = [f"🔍 Найдено книг: {len(books)}\n"]
     
-    for i, book in enumerate(books[:10], 1):  # Показываем первые 10
-        genre = f" ({book['genre']})" if book.get('genre') else ""
-        desc = book.get('description', '')[:80]
-        if desc:
-            desc = f"\n   {desc}..."
-        
-        message_lines.append(
-            f"{i}. *{book['title']}* - {book['author']}{genre}\n"
-            f"   ID: {book['id']}{desc}"
-        )
+    for i, book in enumerate(books[:10], 1):
+        genre = f" ({book['genre']})" if book['genre'] else ""
+        pages = f" - {book['total_pages']} стр."
+        message_parts.append(f"{i}. {book['title']} - {book['author']}{genre}{pages}")
+        message_parts.append(f"   📚 ID: {book['id']}")
     
-    message_lines.append("\n📝 *Чтобы добавить книгу:* /add <id>")
+    message_parts.append("\n📝 Чтобы добавить книгу: /add <id>")
     
-    await update.message.reply_text(
-        "\n".join(message_lines),
-        parse_mode='Markdown'
-    )
+    await update.message.reply_text("\n".join(message_parts))
 
 async def rate_book(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Оценивает книгу."""
+    """Команда /rate <id> <оценка> - оценить книгу"""
     if len(context.args) != 2:
-        await update.message.reply_text(
-            "⭐ *Использование:* /rate <id_книги> <оценка_1-5>\n\n"
-            "*Пример:*\n"
-            "/rate 123 5",
-            parse_mode='Markdown'
-        )
+        await update.message.reply_text("⭐ Использование: /rate <id_книги> <оценка_1-5>\nПример: /rate 1 5")
         return
     
     try:
@@ -229,19 +284,12 @@ async def rate_book(update: Update, context: ContextTypes.DEFAULT_TYPE):
         rating = int(context.args[1])
         
         if rating < 1 or rating > 5:
-            await update.message.reply_text(
-                "❌ *Оценка должна быть от 1 до 5.*",
-                parse_mode='Markdown'
-            )
+            await update.message.reply_text("❌ Оценка должна быть от 1 до 5.")
             return
         
         # Проверяем, есть ли книга у пользователя
         if not user_manager.has_book(user_id, book_id):
-            await update.message.reply_text(
-                "❌ *У вас нет этой книги в коллекции.*\n"
-                "Сначала добавьте книгу через /add",
-                parse_mode='Markdown'
-            )
+            await update.message.reply_text("❌ У вас нет этой книги в коллекции.")
             return
         
         # Ставим оценку
@@ -250,58 +298,38 @@ async def rate_book(update: Update, context: ContextTypes.DEFAULT_TYPE):
             title = book_info['title'] if book_info else f"Книга #{book_id}"
             
             stars = "⭐" * rating
-            await update.message.reply_text(
-                f"⭐ *Оценка поставлена!*\n\n"
-                f"*{title}*\n"
-                f"Ваша оценка: {stars} ({rating}/5)",
-                parse_mode='Markdown'
-            )
+            await update.message.reply_text(f"✅ Оценка поставлена!\n\n{title}\n{stars} ({rating}/5)")
         else:
-            await update.message.reply_text(
-                "❌ *Не удалось поставить оценку.*",
-                parse_mode='Markdown'
-            )
+            await update.message.reply_text("❌ Не удалось поставить оценку.")
     
     except ValueError:
-        await update.message.reply_text(
-            "❌ *ID книги и оценка должны быть числами.*",
-            parse_mode='Markdown'
-        )
-    except Exception as e:
-        logger.error(f"Error in rate_book: {e}")
-        await update.message.reply_text(
-            "❌ *Произошла ошибка.*",
-            parse_mode='Markdown'
-        )
+        await update.message.reply_text("❌ ID книги и оценка должны быть числами.")
 
 async def show_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Показывает статистику."""
+    """Команда /stats - статистика чтения"""
     user_id = update.effective_user.id
     stats = user_manager.get_stats(user_id)
     
-    message = (
-        f"📊 *Ваша статистика чтения:*\n\n"
-        f"📚 Всего книг: {stats['total']}\n"
-        f"📅 Запланировано: {stats['planned']}\n"
-        f"📖 Читаю сейчас: {stats['reading']}\n"
-        f"✅ Прочитано: {stats['completed']}\n"
-        f"❌ Брошено: {stats['dropped']}\n"
-    )
+    message = f"""
+📊 Ваша статистика чтения:
+
+📚 Всего книг: {stats['total']}
+📅 Запланировано: {stats['planned']}
+📖 Читаю сейчас: {stats['reading']}
+✅ Прочитано: {stats['completed']}
+❌ Брошено: {stats['dropped']}
+📖 Всего прочитано страниц: {stats['total_pages']}
+"""
     
     if stats['avg_rating'] > 0:
         message += f"\n⭐ Средняя оценка: {stats['avg_rating']}"
     
-    await update.message.reply_text(message, parse_mode='Markdown')
+    await update.message.reply_text(message)
 
 async def remove_book(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Удаляет книгу из коллекции."""
+    """Команда /remove <id> - удалить книгу"""
     if not context.args:
-        await update.message.reply_text(
-            "🗑️ *Использование:* /remove <id_книги>\n\n"
-            "*Пример:*\n"
-            "/remove 123",
-            parse_mode='Markdown'
-        )
+        await update.message.reply_text("🗑️ Использование: /remove <id_книги>\nПример: /remove 1")
         return
     
     try:
@@ -309,60 +337,52 @@ async def remove_book(update: Update, context: ContextTypes.DEFAULT_TYPE):
         book_id = int(context.args[0])
         
         if user_manager.remove_book(user_id, book_id):
-            await update.message.reply_text(
-                "✅ *Книга удалена из вашей коллекции.*",
-                parse_mode='Markdown'
-            )
+            await update.message.reply_text("✅ Книга удалена из вашей коллекции.")
         else:
-            await update.message.reply_text(
-                "❌ *Книга не найдена в вашей коллекции.*",
-                parse_mode='Markdown'
-            )
+            await update.message.reply_text("❌ Книга не найдена в вашей коллекции.")
     
     except ValueError:
-        await update.message.reply_text(
-            "❌ *ID книги должен быть числом.*",
-            parse_mode='Markdown'
-        )
-    except Exception as e:
-        logger.error(f"Error in remove_book: {e}")
-        await update.message.reply_text(
-            "❌ *Произошла ошибка.*",
-            parse_mode='Markdown'
-        )
+        await update.message.reply_text("❌ ID книги должен быть числом.")
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Показывает справку."""
-    help_text = (
-        "📚 *BookBot - помощник для учета книг*\n\n"
-        "*Основные команды:*\n"
-        "• /start - Начать работу с ботом\n"
-        "• /mybooks - Мои книги\n"
-        "• /add <id> [статус] - Добавить книгу\n"
-        "• /search <запрос> - Найти книгу\n"
-        "• /rate <id> <1-5> - Оценить книгу\n"
-        "• /remove <id> - Удалить книгу\n"
-        "• /stats - Статистика\n"
-        "• /help - Эта справка\n\n"
-        "*Статусы книг:*\n"
-        "• planned - Запланировано\n"
-        "• reading - Читаю сейчас\n"
-        "• completed - Прочитано\n"
-        "• dropped - Брошено\n\n"
-        "*Как начать:*\n"
-        "1. Найдите книгу: /search Гарри Поттер\n"
-        "2. Добавьте книгу: /add 123\n"
-        "3. Следите за прогрессом!\n\n"
-        "Просто напишите название книги для поиска!"
-    )
+    """Команда /help - справка"""
+    help_text = """
+📚 BookBot - помощник для учета книг с функцией чтения
+
+📖 Основные команды:
+/start - Начать работу с ботом
+/mybooks - Мои книги
+/add <id> - Добавить книгу
+/search <запрос> - Найти книгу
+/read <id> - Начать читать книгу
+/progress <id> <страница> - Обновить прогресс чтения
+/finish <id> - Закончить чтение книги
+/rate <id> <1-5> - Оценить книгу
+/remove <id> - Удалить книгу
+/stats - Статистика
+/help - Эта справка
+
+📖 Процесс чтения:
+1. Найдите книгу: /search Гарри Поттер
+2. Добавьте книгу: /add 4
+3. Начните читать: /read 4
+4. Обновляйте прогресс: /progress 4 150
+5. Закончите чтение: /finish 4
+6. Оцените книгу: /rate 4 5
+
+📊 Статусы книг:
+• Запланировано - книга добавлена, но не начата
+• Читаю сейчас - книга в процессе чтения
+• Прочитано - книга полностью прочитана
+• Брошено - чтение прекращено
+"""
     
-    await update.message.reply_text(help_text, parse_mode='Markdown')
+    await update.message.reply_text(help_text)
 
 async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Обработчик текстовых сообщений (автоматический поиск)."""
+    """Обработчик текстовых сообщений (автопоиск)"""
     text = update.message.text.strip()
     
-    # Игнорируем короткие сообщения и команды
     if len(text) < 2 or text.startswith('/'):
         return
     
@@ -370,132 +390,57 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     books = book_db.search_books(text, limit=5)
     
     if not books:
-        await update.message.reply_text(
-            f"🔍 *По запросу '{text}' ничего не найдено.*\n"
-            "Попробуйте другой запрос или используйте /search",
-            parse_mode='Markdown'
-        )
+        await update.message.reply_text(f"🔍 По запросу '{text}' ничего не найдено.")
         return
     
     # Показываем результаты
-    message_lines = [f"🔍 *Результаты поиска по '{text}':*\n"]
+    message_parts = [f"🔍 Найдено по запросу '{text}':\n"]
     
     for i, book in enumerate(books, 1):
-        message_lines.append(
-            f"{i}. *{book['title']}* - {book['author']}\n"
-            f"   ID: {book['id']}"
-        )
+        message_parts.append(f"{i}. {book['title']} - {book['author']}")
+        message_parts.append(f"   📚 ID: {book['id']}")
     
-    message_lines.append("\n📝 *Чтобы добавить книгу:* /add <id>")
+    message_parts.append("\n📝 Чтобы добавить книгу: /add <id>")
     
-    await update.message.reply_text(
-        "\n".join(message_lines),
-        parse_mode='Markdown'
-    )
-
-async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Обработчик инлайн-кнопок."""
-    query = update.callback_query
-    await query.answer()
-    
-    user_id = update.effective_user.id
-    
-    if query.data == "mybooks":
-        stats = user_manager.get_stats(user_id)
-        if stats['total'] == 0:
-            await query.edit_message_text(
-                "📭 *У вас пока нет книг в коллекции.*\n\n"
-                "Используйте /search чтобы найти книги.",
-                parse_mode='Markdown'
-            )
-        else:
-            await query.edit_message_text(
-                f"📚 *В вашей коллекции {stats['total']} книг.*\n\n"
-                f"✅ Прочитано: {stats['completed']}\n"
-                f"📖 Читаю сейчас: {stats['reading']}\n\n"
-                "Используйте /mybooks для подробного списка.",
-                parse_mode='Markdown'
-            )
-    
-    elif query.data == "search":
-        await query.edit_message_text(
-            "🔍 *Поиск книг*\n\n"
-            "Напишите название книги или автора.\n"
-            "Или используйте команду /search <запрос>",
-            parse_mode='Markdown'
-        )
-    
-    elif query.data == "stats":
-        stats = user_manager.get_stats(user_id)
-        await query.edit_message_text(
-            f"📊 *Ваша статистика:*\n\n"
-            f"📚 Всего книг: {stats['total']}\n"
-            f"📅 Запланировано: {stats['planned']}\n"
-            f"📖 Читаю сейчас: {stats['reading']}\n"
-            f"✅ Прочитано: {stats['completed']}\n"
-            f"❌ Брошено: {stats['dropped']}",
-            parse_mode='Markdown'
-        )
+    await update.message.reply_text("\n".join(message_parts))
 
 async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Обработчик ошибок."""
-    logger.error(f"Update {update} caused error {context.error}")
+    """Обработчик ошибок"""
+    logger.error(f"Ошибка: {context.error}")
     
     try:
-        error_msg = str(context.error)
-        
-        if "Timed out" in error_msg:
-            await update.message.reply_text(
-                "⏰ *Операция заняла слишком много времени.*\n"
-                "Попробуйте еще раз.",
-                parse_mode='Markdown'
-            )
-        elif "UNION" in error_msg:
-            await update.message.reply_text(
-                "❌ *Ошибка в базе данных.*\n"
-                "Попробуйте позже.",
-                parse_mode='Markdown'
-            )
-        else:
-            await update.message.reply_text(
-                "❌ *Произошла ошибка.*\n"
-                "Попробуйте еще раз.",
-                parse_mode='Markdown'
-            )
+        await update.message.reply_text("❌ Произошла ошибка. Попробуйте еще раз.")
     except:
         pass
 
 def main():
-    """Запуск бота."""
+    """Запуск бота"""
+    # ⚠️ ВАЖНО: Вставьте свой токен сюда!
     TOKEN = "8443150665:AAGT7hc5gi8JP8MFUmaQQDNhru6VkKc5aj4"
     
     # Создаем приложение
     application = Application.builder().token(TOKEN).build()
     
-    # Добавляем обработчики команд
+    # Добавляем обработчики команд (ВСЕ КОМАНДЫ)
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("mybooks", mybooks))
     application.add_handler(CommandHandler("add", add_book))
     application.add_handler(CommandHandler("search", search_books))
+    application.add_handler(CommandHandler("read", start_reading))
+    application.add_handler(CommandHandler("progress", update_progress))
+    application.add_handler(CommandHandler("finish", finish_reading))
     application.add_handler(CommandHandler("rate", rate_book))
     application.add_handler(CommandHandler("stats", show_stats))
     application.add_handler(CommandHandler("remove", remove_book))
     application.add_handler(CommandHandler("help", help_command))
     
-    # Обработчик инлайн-кнопок
-    application.add_handler(CallbackQueryHandler(button_handler))
-    
     # Обработчик текстовых сообщений
-    application.add_handler(MessageHandler(
-        filters.TEXT & ~filters.COMMAND, 
-        handle_text
-    ))
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
     
     # Обработчик ошибок
     application.add_error_handler(error_handler)
     
-    # Запуск бота
-    application.run_polling(allowed_updates=Update.ALL_TYPES)
+
 
 if __name__ == '__main__':
     main()
