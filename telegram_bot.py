@@ -495,7 +495,6 @@ def main():
     application.add_error_handler(error_handler)
     
     # Запуск бота
-    print("🤖 Бот запущен...")
     application.run_polling(allowed_updates=Update.ALL_TYPES)
 
 if __name__ == '__main__':
