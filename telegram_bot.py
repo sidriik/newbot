@@ -11,7 +11,7 @@ from telegram.ext import Application, CommandHandler, MessageHandler, filters, C
 try:
     from models import UserManager
     from database import db
-    print("✅ Модули загружены успешно")
+    print("Модули загружены успешно")
 except ImportError as e:
     print(f"❌ Ошибка импорта: {e}")
     exit(1)
