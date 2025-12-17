@@ -55,6 +55,7 @@ async def help_command(update: Update, context):
 /help - Справка
 /progress <ID> <страница> - Обновить прогресс
 /add <ID> - Добавить книгу по ID
+/addbook <название> <автор> <страницы> <жанр> - Добавить новую книгу в каталог
 /search <запрос> - Поиск книг
 /stats - Статистика
 /top <rating|popularity> [жанр] - Топ книги
@@ -190,6 +191,63 @@ async def add_command(update: Update, context):
     except Exception as e:
         await update.message.reply_text("Ошибка.")
         print(f"Ошибка /add: {e}")
+
+
+async def addbook_command(update: Update, context):
+    """Добавить новую книгу в общий каталог."""
+    if not context.args or len(context.args) < 4:
+        await update.message.reply_text(
+            "📝 Использование: /addbook <название> <автор> <страницы> <жанр> [описание]\n\n"
+            "Примеры:\n"
+            '/addbook "1984" "Джордж Оруэлл" 328 "Антиутопия" "Роман о тоталитарном обществе"\n'
+            '/addbook "Мастер и Маргарита" "Михаил Булгаков" 480 "Классика"\n'
+            '/addbook "Война и мир" "Лев Толстой" 1225 "Классика" "Эпопея о войне 1812 года"\n\n'
+            '📌 Название и автор в кавычках, если содержат пробелы!'
+        )
+        return
+    
+    try:
+        # Разбираем аргументы
+        args = context.args
+        title = args[0].strip('"')
+        author = args[1].strip('"')
+        pages = int(args[2])
+        genre = args[3].strip('"')
+        
+        # Описание (необязательное)
+        description = " ".join(args[4:]) if len(args) > 4 else ""
+        
+        # Добавляем в базу данных
+        conn = db.get_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            INSERT INTO books (title, author, total_pages, genre, description)
+            VALUES (?, ?, ?, ?, ?)
+        ''', (title, author, pages, genre, description))
+        
+        book_id = cursor.lastrowid
+        conn.commit()
+        conn.close()
+        
+        # Показываем результат
+        await update.message.reply_text(
+            f"""✅ Книга добавлена в общий каталог!
+
+📖 ID: {book_id}
+📚 Название: {title}
+👤 Автор: {author}
+📄 Страниц: {pages}
+📂 Жанр: {genre}
+"""
+        )
+        
+        print(f"Добавлена новая книга: {title} - {author}")
+        
+    except ValueError:
+        await update.message.reply_text("❌ Количество страниц должно быть числом!")
+    except Exception as e:
+        await update.message.reply_text(f"❌ Ошибка: {e}")
 
 
 async def search_command(update: Update, context):
@@ -515,7 +573,8 @@ async def button_handler(update: Update, context):
 /start - Главное меню
 /progress <id> <страница> - Обновить прогресс
 /search <запрос> - Поиск книг
-/add <id> - Добавить книгу"""
+/add <id> - Добавить книгу
+/addbook - Добавить новую книгу в каталог"""
         
         keyboard = [
             [InlineKeyboardButton("📚 Мои книги", callback_data="mybooks"),
@@ -908,11 +967,12 @@ def main():
     
     app = Application.builder().token(TOKEN).build()
     
-    # Команды
+    # Команды (ДОБАВЛЕНА НОВАЯ КОМАНДА addbook)
     app.add_handler(CommandHandler("start", start_command))
     app.add_handler(CommandHandler("help", help_command))
     app.add_handler(CommandHandler("progress", progress_command))
     app.add_handler(CommandHandler("add", add_command))
+    app.add_handler(CommandHandler("addbook", addbook_command))  # НОВАЯ КОМАНДА
     app.add_handler(CommandHandler("search", search_command))
     app.add_handler(CommandHandler("stats", stats_command))
     app.add_handler(CommandHandler("top", top_command))
