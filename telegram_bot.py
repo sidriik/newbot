@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import sqlite3
+import shlex  # <-- ИМПОРТ ДЛЯ ПРАВИЛЬНОГО ПАРСИНГА
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
     Application, CommandHandler, MessageHandler, CallbackQueryHandler,
@@ -195,7 +196,15 @@ async def add_command(update: Update, context):
 
 async def addbook_command(update: Update, context):
     """Добавить новую книгу в общий каталог."""
-    if not context.args:
+    if not update.message.text:
+        await update.message.reply_text("❌ Не удалось получить текст сообщения.")
+        return
+    
+    # Получаем полный текст
+    full_text = update.message.text.strip()
+    
+    # Если только команда без аргументов
+    if full_text == '/addbook' or full_text == '/addbook@your_bot_name':
         await update.message.reply_text(
             "📝 **Использование:** /addbook <название> <автор> <страницы> <жанр> [описание]\n\n"
             "**Примеры:**\n"
@@ -209,37 +218,28 @@ async def addbook_command(update: Update, context):
         return
     
     try:
-        # Объединяем все аргументы в одну строку
-        args_text = " ".join(context.args)
+        # Удаляем команду из текста
+        args_text = full_text.replace('/addbook', '', 1).strip()
         
-        # Простой парсинг - находим части в кавычках
-        parts = []
-        current = ""
-        in_quotes = False
+        if not args_text:
+            await update.message.reply_text("❌ Нет аргументов!")
+            return
         
-        for char in args_text:
-            if char == '"':
-                if in_quotes:
-                    # Закрывающая кавычка
-                    parts.append(current)
-                    current = ""
-                in_quotes = not in_quotes
-            elif char == ' ' and not in_quotes:
-                if current:
-                    parts.append(current)
-                    current = ""
-            else:
-                current += char
+        # ИСПРАВЛЕННЫЙ ПАРСИНГ: используем shlex для правильной обработки кавычек
+        try:
+            parts = shlex.split(args_text)
+        except ValueError:
+            # Если ошибка в кавычках, пробуем простой сплит
+            parts = args_text.split()
+            # Убираем кавычки вручную
+            parts = [p.strip('"') for p in parts]
         
-        if current:
-            parts.append(current)
-        
-        # Проверяем минимальное количество аргументов
+        # Проверяем количество аргументов
         if len(parts) < 4:
             await update.message.reply_text(
-                "❌ Недостаточно аргументов!\n"
-                "Нужно: название, автор, страницы, жанр\n\n"
-                "Пример: /addbook \"Название\" \"Автор\" 300 \"Жанр\""
+                f"❌ Недостаточно аргументов! Нужно минимум 4, получено {len(parts)}.\n\n"
+                "Формат: /addbook \"Название\" \"Автор\" 300 \"Жанр\"\n"
+                f"Ваши аргументы: {parts}"
             )
             return
         
@@ -249,6 +249,9 @@ async def addbook_command(update: Update, context):
         
         try:
             pages = int(parts[2])
+            if pages <= 0:
+                await update.message.reply_text("❌ Количество страниц должно быть положительным числом!")
+                return
         except ValueError:
             await update.message.reply_text("❌ Количество страниц должно быть числом!")
             return
@@ -268,13 +271,17 @@ async def addbook_command(update: Update, context):
         cursor = conn.cursor()
         
         # Проверяем, нет ли уже такой книги
-        cursor.execute('SELECT id FROM books WHERE title = ? AND author = ?', (title, author))
+        cursor.execute('SELECT id, title, author FROM books WHERE LOWER(title) = LOWER(?) AND LOWER(author) = LOWER(?)', 
+                      (title, author))
         existing = cursor.fetchone()
         
         if existing:
+            book_id, existing_title, existing_author = existing
             await update.message.reply_text(
-                f"❌ Книга '{title}' ({author}) уже есть в каталоге!\n"
-                f"Её ID: {existing[0]}"
+                f"❌ Книга уже есть в каталоге!\n\n"
+                f"📖 ID: {book_id}\n"
+                f"📚 Название: {existing_title}\n"
+                f"👤 Автор: {existing_author}"
             )
             conn.close()
             return
@@ -293,7 +300,7 @@ async def addbook_command(update: Update, context):
         await update.message.reply_text(
             f"""✅ Книга добавлена в общий каталог!
 
-📖 **ID:** {book_id}
+📖 **ID:** {book_id} (используйте этот ID для добавления книги себе)
 📚 **Название:** {title}
 👤 **Автор:** {author}
 📄 **Страниц:** {pages}
@@ -301,11 +308,25 @@ async def addbook_command(update: Update, context):
 """
         )
         
-        print(f"✅ Добавлена новая книга: {title} - {author}")
+        # Кнопки для быстрого добавления книги себе
+        keyboard = [
+            [InlineKeyboardButton("➕ Добавить эту книгу себе", callback_data=f"add_{book_id}")],
+            [InlineKeyboardButton("🔍 Найти другие книги", callback_data="search"),
+             InlineKeyboardButton("🏠 Главное меню", callback_data="main_menu")]
+        ]
+        
+        await update.message.reply_text(
+            "Хотите добавить эту книгу в свой список?",
+            reply_markup=InlineKeyboardMarkup(keyboard)
+        )
+        
+        print(f"✅ Добавлена новая книга: {title} - {author} (ID: {book_id})")
         
     except Exception as e:
         await update.message.reply_text(f"❌ Ошибка при добавлении книги: {str(e)}")
         print(f"❌ Ошибка в /addbook: {e}")
+        import traceback
+        traceback.print_exc()
 
 
 async def search_command(update: Update, context):
@@ -337,7 +358,7 @@ async def stats_command(update: Update, context):
 ❌ Брошено: {stats['dropped']}"""
     
     if stats['avg_rating'] > 0:
-        message += f"\n⭐ Средняя оценка: {stats['avg_rating']}"
+        message += f"\n⭐ Средняя оценка: {stats['avg_rating']:.1f}"
     
     keyboard = [
         [InlineKeyboardButton("📚 Мои книги", callback_data="mybooks"),
@@ -519,7 +540,7 @@ async def button_handler(update: Update, context):
 ❌ Брошено: {stats['dropped']}"""
         
         if stats['avg_rating'] > 0:
-            message += f"\n⭐ Средняя оценка: {stats['avg_rating']}"
+            message += f"\n⭐ Средняя оценка: {stats['avg_rating']:.1f}"
         
         keyboard = [
             [InlineKeyboardButton("📚 Мои книги", callback_data="mybooks"),
@@ -685,7 +706,7 @@ async def button_handler(update: Update, context):
                 )
             else:
                 await query.edit_message_text(
-                    "❌ Эта книга уже есть.",
+                    "❌ Эта книга уже есть в твоём списке.",
                     reply_markup=InlineKeyboardMarkup([
                         [InlineKeyboardButton("🔙 Назад", callback_data="add_book")]
                     ])
@@ -755,13 +776,16 @@ async def button_handler(update: Update, context):
                     ]
                     
                     stars = "⭐" * rating
+                    rating_text = f"{stars} ({rating}/5)"
+                    avg_rating = f"{stats['avg_rating']:.1f}" if stats['avg_rating'] else "0.0"
+                    
                     await query.edit_message_text(
                         f"""✅ Оценка поставлена!
 
 {book.title}
-{stars} ({rating}/5)
+{rating_text}
 
-Общий рейтинг: {stats['avg_rating']}/5
+📊 Общий рейтинг книги: {avg_rating}/5
 ({stats['rating_count']} оценок)""",
                         reply_markup=InlineKeyboardMarkup(keyboard)
                     )
@@ -884,10 +908,10 @@ async def do_search(upd, query, genre):
     keyboard_buttons = []
     for i, book in enumerate(books, 1):
         stats = db.get_book_stats(book.id)
-        rating = f" ⭐{stats['avg_rating']}" if stats['avg_rating'] > 0 else ""
+        rating = f" ⭐{stats['avg_rating']:.1f}" if stats['avg_rating'] > 0 else ""
         
         message += f"\n{i}. {book.title}"
-        message += f"\n   👤 {book.author}{rating}"
+        message += f"\n   👤 {book.author}{rating} (ID: {book.id})"
         
         short = book.title[:12] + "..." if len(book.title) > 12 else book.title
         keyboard_buttons.append([
@@ -943,13 +967,13 @@ async def show_top_books(upd, criteria, filter_by=""):
         if criteria == 'rating':
             rating = stats['avg_rating']
             count = stats['rating_count']
-            line = f"{i}. {book.title} - ⭐ {rating}/5 ({count} оценок)"
+            line = f"{i}. {book.title} - ⭐ {rating:.1f}/5 ({count} оценок)"
         else:
             added = stats['total_added']
             line = f"{i}. {book.title} - 👥 {added} читателей"
         
         message += f"\n{line}"
-        message += f"\n   👤 {book.author}"
+        message += f"\n   👤 {book.author} (ID: {book.id})"
         
         short = book.title[:12] + "..." if len(book.title) > 12 else book.title
         keyboard_buttons.append([
@@ -989,9 +1013,9 @@ async def text_message_handler(update: Update, context):
     keyboard_buttons = []
     for i, book in enumerate(books[:5], 1):
         stats = db.get_book_stats(book.id)
-        rating = f" ⭐{stats['avg_rating']}" if stats['avg_rating'] > 0 else ""
+        rating = f" ⭐{stats['avg_rating']:.1f}" if stats['avg_rating'] > 0 else ""
         
-        message += f"\n{i}. {book.title} - {book.author}{rating}"
+        message += f"\n{i}. {book.title} - {book.author}{rating} (ID: {book.id})"
         
         short = book.title[:12] + "..." if len(book.title) > 12 else book.title
         keyboard_buttons.append([
@@ -1030,7 +1054,7 @@ def main():
     app.add_handler(CommandHandler("help", help_command))
     app.add_handler(CommandHandler("progress", progress_command))
     app.add_handler(CommandHandler("add", add_command))
-    app.add_handler(CommandHandler("addbook", addbook_command))  # ИСПРАВЛЕННАЯ КОМАНДА
+    app.add_handler(CommandHandler("addbook", addbook_command))
     app.add_handler(CommandHandler("search", search_command))
     app.add_handler(CommandHandler("stats", stats_command))
     app.add_handler(CommandHandler("top", top_command))
