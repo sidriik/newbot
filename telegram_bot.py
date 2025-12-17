@@ -255,8 +255,7 @@ async def addbook_command(update: Update, context):
                 await update.message.reply_text(
                     f"❌ Книга уже есть в каталоге!\n"
                     f"ID: {book_id} - {title} ({author})\n\n"
-                    f"Добавить себе: `/add {book_id}`",
-                    parse_mode='Markdown'
+                    f"Добавить себе: /add {book_id}"
                 )
                 conn.close()
                 return
@@ -271,38 +270,38 @@ async def addbook_command(update: Update, context):
             conn.commit()
             conn.close()
             
-            # Показываем результат
-            response = f"""✅ **Книга добавлена в каталог!**
+            # Показываем результат (БЕЗ EMOJI в начале, чтобы избежать ошибки кодировки)
+            response = f"""Книга добавлена в каталог!
 
-📖 **ID:** `{book_id}`
-📚 **Название:** {title}
-👤 **Автор:** {author}
-📄 **Страниц:** {pages}
-📂 **Жанр:** {genre}"""
+📖 ID: {book_id}
+📚 Название: {title}
+👤 Автор: {author}
+📄 Страниц: {pages}
+📂 Жанр: {genre}"""
             
             if description:
-                response += f"\n📝 **Описание:** {description}"
+                response += f"\n📝 Описание: {description}"
             
-            response += f"\n\n💡 **Добавить себе:** `/add {book_id}`"
+            response += f"\n\n💡 Добавить себе: /add {book_id}"
             
-            await update.message.reply_text(response, parse_mode='Markdown')
+            await update.message.reply_text(response)
             
-            print(f"✅ Добавлена новая книга: '{title}' - '{author}' (ID: {book_id})")
+            print(f"Добавлена новая книга: '{title}' - '{author}' (ID: {book_id})")
             
             return
             
         except Exception as e:
-            await update.message.reply_text(f"❌ Ошибка: {str(e)}")
-            print(f"❌ Ошибка в /addbook (прямой вызов): {e}")
+            await update.message.reply_text(f"Ошибка: {str(e)}")
+            print(f"Ошибка в /addbook (прямой вызов): {e}")
             return
     
     # Если нет аргументов - начинаем пошаговое добавление
     ADD_BOOK_STATES[user_id] = {'step': 1}
     
     await update.message.reply_text(
-        "📚 **Добавление новой книги в каталог**\n\n"
+        "📚 Добавление новой книги в каталог\n\n"
         "Давайте добавим книгу по шагам!\n\n"
-        "1️⃣ Отправьте **название книги**:\n"
+        "1️⃣ Отправьте название книги:\n"
         "(например: Мастер и Маргарита)"
     )
 
@@ -384,8 +383,8 @@ async def handle_text_message(update: Update, context):
             ADD_BOOK_STATES[user_id] = state
             
             await update.message.reply_text(
-                f"✅ Название: {text}\n\n"
-                "2️⃣ Отправьте **автора книги**:\n"
+                f"Название: {text}\n\n"
+                "2️⃣ Отправьте автора книги:\n"
                 "(например: Михаил Булгаков)"
             )
             
@@ -395,8 +394,8 @@ async def handle_text_message(update: Update, context):
             ADD_BOOK_STATES[user_id] = state
             
             await update.message.reply_text(
-                f"✅ Автор: {text}\n\n"
-                "3️⃣ Отправьте **количество страниц** (только число):\n"
+                f"Автор: {text}\n\n"
+                "3️⃣ Отправьте количество страниц (только число):\n"
                 "(например: 480)"
             )
             
@@ -412,8 +411,8 @@ async def handle_text_message(update: Update, context):
                 ADD_BOOK_STATES[user_id] = state
                 
                 await update.message.reply_text(
-                    f"✅ Страниц: {pages}\n\n"
-                    "4️⃣ Отправьте **жанр книги**:\n"
+                    f"Страниц: {pages}\n\n"
+                    "4️⃣ Отправьте жанр книги:\n"
                     "(например: Классика, Фэнтези, Детектив)"
                 )
             except ValueError:
@@ -425,8 +424,8 @@ async def handle_text_message(update: Update, context):
             ADD_BOOK_STATES[user_id] = state
             
             await update.message.reply_text(
-                f"✅ Жанр: {text}\n\n"
-                "5️⃣ Отправьте **описание книги** (можно пропустить, отправив '-'):\n"
+                f"Жанр: {text}\n\n"
+                "5️⃣ Отправьте описание книги (можно пропустить, отправив '-'):\n"
                 "(например: Роман о писателе и его возлюбленной)"
             )
             
@@ -457,8 +456,7 @@ async def handle_text_message(update: Update, context):
                     await update.message.reply_text(
                         f"❌ Книга уже есть в каталоге!\n"
                         f"ID: {book_id} - {title} ({author})\n\n"
-                        f"Добавить себе: `/add {book_id}`",
-                        parse_mode='Markdown'
+                        f"Добавить себе: /add {book_id}"
                     )
                     conn.close()
                     return
@@ -473,27 +471,28 @@ async def handle_text_message(update: Update, context):
                 conn.commit()
                 conn.close()
                 
-                # Показываем результат
-                response = f"""✅ **Книга добавлена в каталог!**
+                # Показываем результат (БЕЗ EMOJI в начале)
+                response = f"""Книга добавлена в каталог!
 
-📖 **ID:** `{book_id}`
-📚 **Название:** {title}
-👤 **Автор:** {author}
-📄 **Страниц:** {pages}
-📂 **Жанр:** {genre}"""
+📖 ID: {book_id}
+📚 Название: {title}
+👤 Автор: {author}
+📄 Страниц: {pages}
+📂 Жанр: {genre}"""
                 
                 if description:
-                    response += f"\n📝 **Описание:** {description}"
+                    response += f"\n📝 Описание: {description}"
                 
-                response += f"\n\n💡 **Добавить себе:** `/add {book_id}`"
+                response += f"\n\n💡 Добавить себе: /add {book_id}"
                 
-                await update.message.reply_text(response, parse_mode='Markdown')
+                await update.message.reply_text(response)
                 
-                print(f"✅ Добавлена новая книга (пошагово): '{title}' - '{author}' (ID: {book_id})")
+                print(f"Добавлена новая книга (пошагово): '{title}' - '{author}' (ID: {book_id})")
                 
             except Exception as e:
-                await update.message.reply_text(f"❌ Ошибка при добавлении книги: {str(e)}")
-                print(f"❌ Ошибка в пошаговом добавлении книги: {e}")
+                # Используем простой текст без эмодзи в ошибке
+                await update.message.reply_text(f"Ошибка при добавлении книги: {str(e)}")
+                print(f"Ошибка в пошаговом добавлении книги: {e}")
         
         return
     
