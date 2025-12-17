@@ -182,7 +182,7 @@ class UserManager:
         except Exception as e:
             print(f"Ошибка получения завершенных книг: {e}")
             return []
-def validate_status(self, status):
+    def validate_status(self, status):
         valid_statuses = ['planned', 'reading', 'completed', 'dropped']
         return status in valid_statuses
 
