@@ -2,16 +2,22 @@
 """
 telegram_bot.py - Telegram бот для учета книг BookBot
 """
+import logging
+
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import (
+    Application, CommandHandler, MessageHandler, CallbackQueryHandler,
+    ContextTypes, filters
+)
 
 from database import Database
 from models import UserManager, BookManager, Book, UserBook
 
-# Настройка логирования
+# Простая настройка логирования (можно вывести начало работы)
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.INFO
 )
-logger = logging.getLogger(__name__)
 
 # Ваш токен Telegram бота
 TOKEN = "8371793740:AAGyHz10Ro6JabxomkyjDGsjWhNaf3SUeMI"
