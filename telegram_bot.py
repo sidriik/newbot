@@ -1,58 +1,60 @@
 #!/usr/bin/env python3
 """
-telegram_bot.py - Telegram бот для учета книг BookBot
-
-Этот модуль содержит основной код Telegram бота для учета книг.
-Бот позволяет искать книги, добавлять их в список чтения, отслеживать прогресс,
-оценивать книги и просматривать статистику.
-
-Используемые библиотеки:
-- python-telegram-bot: для работы с Telegram API
-- SQLite: для хранения данных
-- logging: для логирования событий
+bot.py - Основной модуль Telegram бота BookBot
 """
 
 import logging
-import sys
-from typing import Optional, Dict, Any
+import asyncio
+from typing import Optional
 
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import (
-    Application, CommandHandler, MessageHandler, CallbackQueryHandler,
-    ContextTypes, filters
-)
+# Импорт библиотеки для работы с Telegram
+try:
+    from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+    from telegram.ext import (
+        Application, CommandHandler, MessageHandler, CallbackQueryHandler,
+        ContextTypes, filters
+    )
+    TELEGRAM_AVAILABLE = True
+except ImportError as e:
+    print(f"Внимание: Библиотека python-telegram-bot не установлена: {e}")
+    print("Установите её командой: pip install python-telegram-bot")
+    TELEGRAM_AVAILABLE = False
 
-from config import config
 from database import Database
 from models import UserManager, BookManager, Book, UserBook
 
 
 # Настройка логирования
-logging.basicConfig(**config.get_logging_config())
+logging.basicConfig(
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    level=logging.INFO
+)
 logger = logging.getLogger(__name__)
 
 
 class BookBot:
     """Основной класс Telegram бота для учета книг."""
     
-    def __init__(self, token: str, data_dir: str = "data"):
+    def __init__(self, token: str):
         """
         Инициализация бота.
         
         Args:
-            token (str): Токен Telegram бота
-            data_dir (str): Директория для хранения данных
+            token: Токен Telegram бота
         """
+        if not TELEGRAM_AVAILABLE:
+            raise ImportError("Библиотека python-telegram-bot не установлена")
+        
         self.token = token
         
-        # Инициализируем базу данных и менеджеры
+        # Инициализируем базу данных
         try:
-            self.db = Database(str(config.db_path))
+            self.db = Database("data/books.db")
             self.user_manager = UserManager(self.db)
             self.book_manager = BookManager(self.db)
-            logger.info("База данных и менеджеры инициализированы успешно")
+            logger.info("База данных и менеджеры инициализированы")
         except Exception as e:
-            logger.error(f"Ошибка инициализации базы данных: {e}")
+            logger.error(f"Ошибка инициализации БД: {e}")
             raise
         
         # Создаем приложение Telegram
@@ -63,85 +65,73 @@ class BookBot:
         
         logger.info("BookBot инициализирован успешно")
     
-    def _register_handlers(self) -> None:
-        """Регистрирует все обработчики команд и сообщений."""
+    def _register_handlers(self):
+        """Регистрирует обработчики команд."""
         # Команды
-        self.application.add_handler(CommandHandler("start", self._start_command))
-        self.application.add_handler(CommandHandler("help", self._help_command))
-        self.application.add_handler(CommandHandler("progress", self._progress_command))
-        self.application.add_handler(CommandHandler("add", self._add_command))
-        self.application.add_handler(CommandHandler("search", self._search_command))
-        self.application.add_handler(CommandHandler("stats", self._stats_command))
-        self.application.add_handler(CommandHandler("top", self._top_command))
+        self.application.add_handler(CommandHandler("start", self.start_command))
+        self.application.add_handler(CommandHandler("help", self.help_command))
+        self.application.add_handler(CommandHandler("progress", self.progress_command))
+        self.application.add_handler(CommandHandler("add", self.add_command))
+        self.application.add_handler(CommandHandler("search", self.search_command))
+        self.application.add_handler(CommandHandler("stats", self.stats_command))
+        self.application.add_handler(CommandHandler("top", self.top_command))
         
         # Обработчики кнопок
-        self.application.add_handler(CallbackQueryHandler(self._button_handler))
+        self.application.add_handler(CallbackQueryHandler(self.button_handler))
         
-        # Обработчик текстовых сообщений (для поиска)
+        # Обработчик текстовых сообщений
         self.application.add_handler(
-            MessageHandler(filters.TEXT & ~filters.COMMAND, self._text_message_handler)
+            MessageHandler(filters.TEXT & ~filters.COMMAND, self.text_message_handler)
         )
         
         # Обработчик ошибок
-        self.application.add_error_handler(self._error_handler)
-        
-        logger.info("Обработчики зарегистрированы")
+        self.application.add_error_handler(self.error_handler)
     
-    async def _start_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    async def start_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """
         Обработчик команды /start.
         
         Показывает приветственное сообщение и главное меню.
-        
-        Args:
-            update (Update): Объект обновления Telegram
-            context (ContextTypes.DEFAULT_TYPE): Контекст выполнения
         """
-        user = update.effective_user
-        
-        # Получаем или создаем пользователя
         try:
+            user = update.effective_user
+            
+            # Получаем или создаем пользователя
             user_id = self.user_manager.get_or_create_user(
                 telegram_id=user.id,
                 username=user.username,
                 first_name=user.first_name,
                 last_name=user.last_name
             )
+            
             logger.info(f"Пользователь {user_id} ({user.username}) использовал /start")
+            
+            welcome_text = f"""👋 Привет, {user.first_name}!
+
+Я — BookBot, ваш помощник для учета книг!
+
+📚 Что я умею:
+• 🔍 Искать книги по названию, автору или жанру
+• 📚 Добавлять книги в вашу коллекцию
+• 📖 Отслеживать прогресс чтения
+• ⭐ Оценивать прочитанные книги
+• 📊 Показывать статистику чтения
+• 🏆 Находить самые популярные книги
+
+Выберите действие из меню:"""
+            
+            keyboard = self._create_main_menu_keyboard()
+            await update.message.reply_text(welcome_text, reply_markup=keyboard)
+            
         except Exception as e:
-            logger.error(f"Ошибка создания пользователя: {e}")
+            logger.error(f"Ошибка в команде /start: {e}")
             await update.message.reply_text(
-                "❌ Произошла ошибка при создании профиля. Попробуйте позже."
+                "❌ Произошла ошибка. Попробуйте позже.",
+                reply_markup=self._create_back_to_menu_keyboard()
             )
-            return
-        
-        welcome_text = f"""👋 Привет, {user.first_name}!
-
-Я — BookBot, ваш личный помощник для учета книг.
-
-С моей помощью вы можете:
-📚 Искать книги в обширной базе
-➕ Добавлять книги в свой список чтения
-📖 Отслеживать прогресс чтения
-⭐ Оценивать прочитанные книги
-📊 Просматривать статистику чтения
-🏆 Находить самые популярные и высоко оцененные книги
-
-Выберите действие из меню ниже:"""
-        
-        keyboard = self._create_main_menu_keyboard()
-        await update.message.reply_text(welcome_text, reply_markup=keyboard)
     
-    async def _help_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-        """
-        Обработчик команды /help.
-        
-        Показывает справку по использованию бота.
-        
-        Args:
-            update (Update): Объект обновления Telegram
-            context (ContextTypes.DEFAULT_TYPE): Контекст выполнения
-        """
+    async def help_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Обработчик команды /help."""
         help_text = """📚 BookBot - Помощник для учета книг
 
 📋 Основные команды:
@@ -149,27 +139,18 @@ class BookBot:
 /help - Эта справка
 /progress <ID> <страница> - Обновить прогресс чтения
 /add <ID> - Добавить книгу по ID
-/search <запрос> - Поиск книг по названию/автору
-/stats - Ваша статистика чтения
-/top <критерий> <жанр/автор> - Топ книг
+/search <запрос> - Поиск книг
+/stats - Ваша статистика
+/top <rating|popularity> [жанр|автор] - Топ книг
 
-🔍 Поиск книг:
-• По названию: /search Гарри Поттер
-• По автору: /search Толстой
-• По жанру: используйте меню поиска
+🎯 Как начать:
+1. 🔍 Найдите книгу через "Поиск книг"
+2. ➕ Добавьте понравившуюся книгу
+3. 📖 Начните читать из раздела "Начать читать"
+4. 📊 Обновляйте прогресс командой /progress
+5. ⭐ Оцените книгу после прочтения
 
-📊 Обновление прогресса:
-/progress 1 150 - перейти на страницу 150 книги с ID 1
-
-⭐ Оценка книг:
-Оценивайте прочитанные книги от 1 до 5 звезд
-
-🏆 Топ книги:
-/top rating - книги с наивысшим рейтингом
-/top popularity - самые популярные книги
-/top rating фэнтези - лучшие книги в жанре фэнтези
-
-Для удобства используйте кнопки меню!"""
+💡 Для удобства используйте кнопки меню!"""
         
         keyboard = InlineKeyboardMarkup([[
             InlineKeyboardButton("📚 Главное меню", callback_data="main_menu"),
@@ -178,37 +159,29 @@ class BookBot:
         
         await update.message.reply_text(help_text, reply_markup=keyboard)
     
-    async def _progress_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-        """
-        Обработчик команды /progress.
-        
-        Обновляет прогресс чтения книги.
-        
-        Args:
-            update (Update): Объект обновления Telegram
-            context (ContextTypes.DEFAULT_TYPE): Контекст выполнения
-        """
-        user_id = update.effective_user.id
-        
+    async def progress_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Обработчик команды /progress."""
         if not context.args or len(context.args) != 2:
             await update.message.reply_text(
-                "❌ Использование: /progress <ID_книги> <номер_страницы>\n"
-                "Пример: /progress 1 150"
+                "📝 Использование: /progress <ID_книги> <номер_страницы>\n"
+                "Пример: /progress 1 150\n\n"
+                "ID книги можно найти в разделе 'Мои книги'."
             )
             return
         
         try:
+            user = update.effective_user
             book_id = int(context.args[0])
             current_page = int(context.args[1])
             
-            # Получаем ID пользователя в базе
+            # Получаем ID пользователя
             user_db_id = self.user_manager.get_or_create_user(
-                telegram_id=user_id,
-                username=update.effective_user.username,
-                first_name=update.effective_user.first_name
+                telegram_id=user.id,
+                username=user.username,
+                first_name=user.first_name
             )
             
-            # Получаем информацию о книге
+            # Проверяем, есть ли книга у пользователя
             book_info = self.user_manager.get_book_info(user_db_id, book_id)
             if not book_info:
                 await update.message.reply_text(
@@ -217,10 +190,10 @@ class BookBot:
                 )
                 return
             
-            # Проверяем, что книга в статусе чтения
+            # Проверяем статус
             if book_info.status != 'reading':
                 await update.message.reply_text(
-                    "❌ Эта книга не в статусе 'Читаю сейчас'.",
+                    "❌ Эту книгу вы сейчас не читаете.",
                     reply_markup=InlineKeyboardMarkup([[
                         InlineKeyboardButton("📖 Начать читать", callback_data=f"start_{book_id}"),
                         InlineKeyboardButton("📚 Мои книги", callback_data="mybooks")
@@ -228,19 +201,19 @@ class BookBot:
                 )
                 return
             
-            # Получаем информацию о книге для проверки количества страниц
-            book_data = self.book_manager.get_book(book_id)
-            if not book_data:
+            # Получаем информацию о книге
+            book = self.book_manager.get_book(book_id)
+            if not book:
                 await update.message.reply_text(
-                    "❌ Книга не найдена в базе.",
+                    "❌ Книга не найдена.",
                     reply_markup=self._create_back_to_menu_keyboard()
                 )
                 return
             
-            # Проверяем, что номер страницы не больше общего количества
-            if current_page > book_data.total_pages:
+            # Проверяем номер страницы
+            if current_page > book.total_pages:
                 await update.message.reply_text(
-                    f"❌ В этой книге только {book_data.total_pages} страниц!",
+                    f"❌ В этой книге только {book.total_pages} страниц!",
                     reply_markup=self._create_back_to_menu_keyboard()
                 )
                 return
@@ -255,39 +228,36 @@ class BookBot:
                 )
                 return
             
-            # Проверяем, закончена ли книга
-            if current_page >= book_data.total_pages:
-                # Автоматически меняем статус на "прочитано"
+            # Рассчитываем прогресс
+            progress = (current_page / book.total_pages) * 100
+            
+            if progress >= 100:
+                # Автоматически завершаем чтение
                 self.user_manager.update_book_status(user_db_id, book_id, 'completed')
                 
                 message = f"""🎉 Поздравляем! Вы прочитали книгу!
 
-{book_data.title}
-👤 {book_data.author}
+{book.title}
+👤 {book.author}
 
-Книга перемещена в раздел "Прочитано"."""
+📊 Прогресс: {current_page}/{book.total_pages} страниц (100%)"""
                 
                 keyboard = InlineKeyboardMarkup([[
                     InlineKeyboardButton("⭐ Оценить книгу", callback_data=f"rate_{book_id}"),
                     InlineKeyboardButton("📚 Мои книги", callback_data="mybooks")
-                ], [
-                    InlineKeyboardButton("📖 Начать новую книгу", callback_data="start_reading")
                 ]])
             else:
-                progress = (current_page / book_data.total_pages) * 100
                 message = f"""📖 Прогресс обновлен!
 
-{book_data.title}
-👤 {book_data.author}
+{book.title}
+👤 {book.author}
 
-📊 Прогресс: {current_page}/{book_data.total_pages} страниц
+📊 Страница: {current_page} из {book.total_pages}
 📈 Прочитано: {progress:.1f}%"""
                 
                 keyboard = InlineKeyboardMarkup([[
                     InlineKeyboardButton("📊 Обновить еще", callback_data=f"progress_{book_id}"),
                     InlineKeyboardButton("📚 Мои книги", callback_data="mybooks")
-                ], [
-                    InlineKeyboardButton("🏠 Главное меню", callback_data="main_menu")
                 ]])
             
             await update.message.reply_text(message, reply_markup=keyboard)
@@ -304,34 +274,25 @@ class BookBot:
                 reply_markup=self._create_back_to_menu_keyboard()
             )
     
-    async def _add_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-        """
-        Обработчик команды /add.
-        
-        Добавляет книгу по ID.
-        
-        Args:
-            update (Update): Объект обновления Telegram
-            context (ContextTypes.DEFAULT_TYPE): Контекст выполнения
-        """
-        user_id = update.effective_user.id
-        
+    async def add_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Обработчик команды /add."""
         if not context.args:
             await update.message.reply_text(
-                "❌ Использование: /add <ID_книги>\n"
+                "📝 Использование: /add <ID_книги>\n"
                 "Пример: /add 1\n\n"
                 "ID книги можно найти при поиске."
             )
             return
         
         try:
+            user = update.effective_user
             book_id = int(context.args[0])
             
-            # Получаем ID пользователя в базе
+            # Получаем ID пользователя
             user_db_id = self.user_manager.get_or_create_user(
-                telegram_id=user_id,
-                username=update.effective_user.username,
-                first_name=update.effective_user.first_name
+                telegram_id=user.id,
+                username=user.username,
+                first_name=user.first_name
             )
             
             # Проверяем существование книги
@@ -359,13 +320,16 @@ class BookBot:
                 )
                 return
             
-            message = f"""✅ Книга добавлена в вашу коллекцию!
+            message = f"""✅ Книга добавлена!
 
-{book.get_formatted_info(include_stats=False)}
+{book.title}
+👤 {book.author}
+📂 {book.genre}
+📄 {book.total_pages} страниц
 
 📂 Статус: 📅 Запланировано
 
-Что вы хотите сделать дальше?"""
+Что дальше?"""
             
             keyboard = InlineKeyboardMarkup([[
                 InlineKeyboardButton("📖 Начать читать", callback_data=f"start_{book_id}"),
@@ -389,16 +353,8 @@ class BookBot:
                 reply_markup=self._create_back_to_menu_keyboard()
             )
     
-    async def _search_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-        """
-        Обработчик команды /search.
-        
-        Ищет книги по запросу.
-        
-        Args:
-            update (Update): Объект обновления Telegram
-            context (ContextTypes.DEFAULT_TYPE): Контекст выполнения
-        """
+    async def search_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Обработчик команды /search."""
         if not context.args:
             # Показываем меню поиска
             await self._show_search_menu(update)
@@ -407,24 +363,16 @@ class BookBot:
         query = " ".join(context.args)
         await self._perform_search(update, query, "")
     
-    async def _stats_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-        """
-        Обработчик команды /stats.
-        
-        Показывает статистику пользователя.
-        
-        Args:
-            update (Update): Объект обновления Telegram
-            context (ContextTypes.DEFAULT_TYPE): Контекст выполнения
-        """
-        user_id = update.effective_user.id
-        
+    async def stats_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Обработчик команды /stats."""
         try:
-            # Получаем ID пользователя в базе
+            user = update.effective_user
+            
+            # Получаем ID пользователя
             user_db_id = self.user_manager.get_or_create_user(
-                telegram_id=user_id,
-                username=update.effective_user.username,
-                first_name=update.effective_user.first_name
+                telegram_id=user.id,
+                username=user.username,
+                first_name=user.first_name
             )
             
             # Получаем статистику
@@ -434,13 +382,13 @@ class BookBot:
             message_lines = [
                 "📊 Ваша статистика чтения:",
                 "",
-                f"📚 Всего книг в коллекции: {stats['total']}",
+                f"📚 Всего книг: {stats['total']}",
                 f"📅 Запланировано: {stats['planned']}",
                 f"📖 Читаю сейчас: {stats['reading']}",
                 f"✅ Прочитано: {stats['completed']}",
                 f"❌ Брошено: {stats['dropped']}",
                 "",
-                f"📈 Всего прочитано страниц: {stats['total_pages_read']}"
+                f"📈 Прочитано страниц: {stats['total_pages_read']}"
             ]
             
             if stats['avg_rating'] > 0:
@@ -460,7 +408,6 @@ class BookBot:
                 InlineKeyboardButton("📚 Мои книги", callback_data="mybooks"),
                 InlineKeyboardButton("⭐ Оценить книги", callback_data="rate_book")
             ], [
-                InlineKeyboardButton("🏆 Топ книги", callback_data="top_books"),
                 InlineKeyboardButton("🏠 Главное меню", callback_data="main_menu")
             ]])
             
@@ -473,16 +420,8 @@ class BookBot:
                 reply_markup=self._create_back_to_menu_keyboard()
             )
     
-    async def _top_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-        """
-        Обработчик команды /top.
-        
-        Показывает топ книг по рейтингу или популярности.
-        
-        Args:
-            update (Update): Объект обновления Telegram
-            context (ContextTypes.DEFAULT_TYPE): Контекст выполнения
-        """
+    async def top_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Обработчик команды /top."""
         if not context.args:
             # Показываем меню выбора критерия
             keyboard = InlineKeyboardMarkup([[
@@ -504,27 +443,18 @@ class BookBot:
         
         if criteria not in ['rating', 'popularity']:
             await update.message.reply_text(
-                "❌ Использование: /top <rating|popularity> [жанр|автор]\n"
+                "📝 Использование: /top <rating|popularity> [жанр|автор]\n"
                 "Примеры:\n"
                 "/top rating - книги с наивысшим рейтингом\n"
                 "/top popularity - самые популярные книги\n"
-                "/top rating фэнтези - лучшие книги в жанре фэнтези\n"
-                "/top popularity Толстой - популярные книги Толстого"
+                "/top rating фэнтези - лучшие книги в жанре фэнтези"
             )
             return
         
         await self._show_top_books(update, criteria, filter_by)
     
-    async def _text_message_handler(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-        """
-        Обработчик текстовых сообщений.
-        
-        Используется для поиска книг по текстовому запросу.
-        
-        Args:
-            update (Update): Объект обновления Telegram
-            context (ContextTypes.DEFAULT_TYPE): Контекст выполнения
-        """
+    async def text_message_handler(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Обработчик текстовых сообщений."""
         query = update.message.text.strip()
         
         if len(query) < 2:
@@ -536,28 +466,22 @@ class BookBot:
         
         await self._perform_search(update, query, "")
     
-    async def _button_handler(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-        """
-        Обработчик нажатий на inline-кнопки.
-        
-        Args:
-            update (Update): Объект обновления Telegram
-            context (ContextTypes.DEFAULT_TYPE): Контекст выполнения
-        """
+    async def button_handler(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Обработчик нажатий на inline-кнопки."""
         query = update.callback_query
         await query.answer()
         
-        user_id = update.effective_user.id
+        user = update.effective_user
         callback_data = query.data
         
-        logger.info(f"Пользователь {user_id} нажал кнопку: {callback_data}")
+        logger.info(f"Пользователь {user.id} нажал кнопку: {callback_data}")
         
-        # Получаем ID пользователя в базе
+        # Получаем ID пользователя
         try:
             user_db_id = self.user_manager.get_or_create_user(
-                telegram_id=user_id,
-                username=update.effective_user.username,
-                first_name=update.effective_user.first_name
+                telegram_id=user.id,
+                username=user.username,
+                first_name=user.first_name
             )
         except Exception as e:
             logger.error(f"Ошибка получения пользователя: {e}")
@@ -567,7 +491,7 @@ class BookBot:
             )
             return
         
-        # Обрабатываем разные типы callback_data
+        # Обрабатываем callback_data
         if callback_data == "main_menu":
             await self._show_main_menu(query)
         
@@ -589,9 +513,6 @@ class BookBot:
         elif callback_data == "rate_book":
             await self._show_rate_book_menu(query, user_db_id)
         
-        elif callback_data == "help":
-            await self._show_help_menu(query)
-        
         elif callback_data == "top_books":
             await self._show_top_books_menu(query)
         
@@ -604,49 +525,75 @@ class BookBot:
             await self._perform_search(query, "", genre)
         
         elif callback_data.startswith("search_"):
-            search_type = callback_data.replace("search_", "")
-            if search_type == "input":
-                await query.edit_message_text(
-                    "🔍 Введите название книги или автора для поиска:",
-                    reply_markup=InlineKeyboardMarkup([[
-                        InlineKeyboardButton("🔙 Назад", callback_data="search")
-                    ]])
-                )
+            # Обработка специальных поисковых запросов
+            pass
         
         elif callback_data.startswith("add_"):
-            book_id = int(callback_data.replace("add_", ""))
-            await self._add_book_from_button(query, user_db_id, book_id)
+            try:
+                book_id = int(callback_data.replace("add_", ""))
+                await self._add_book_from_button(query, user_db_id, book_id)
+            except ValueError:
+                await query.edit_message_text(
+                    "❌ Ошибка: неверный ID книги.",
+                    reply_markup=self._create_back_to_menu_keyboard()
+                )
         
         elif callback_data.startswith("start_"):
-            book_id = int(callback_data.replace("start_", ""))
-            await self._start_reading_book(query, user_db_id, book_id)
+            try:
+                book_id = int(callback_data.replace("start_", ""))
+                await self._start_reading_book(query, user_db_id, book_id)
+            except ValueError:
+                await query.edit_message_text(
+                    "❌ Ошибка: неверный ID книги.",
+                    reply_markup=self._create_back_to_menu_keyboard()
+                )
         
         elif callback_data.startswith("progress_"):
-            book_id = int(callback_data.replace("progress_", ""))
-            await self._show_progress_instructions(query, book_id)
-        
-        elif callback_data.startswith("finish_"):
-            book_id = int(callback_data.replace("finish_", ""))
-            await self._finish_reading_book(query, user_db_id, book_id)
+            try:
+                book_id = int(callback_data.replace("progress_", ""))
+                await self._show_progress_instructions(query, book_id)
+            except ValueError:
+                await query.edit_message_text(
+                    "❌ Ошибка: неверный ID книги.",
+                    reply_markup=self._create_back_to_menu_keyboard()
+                )
         
         elif callback_data.startswith("rate_"):
-            parts = callback_data.replace("rate_", "").split("_")
-            if len(parts) == 2:
-                book_id = int(parts[0])
-                rating = int(parts[1])
-                await self._rate_book_from_button(query, user_db_id, book_id, rating)
-            else:
-                # Просто показываем меню оценки для книги
-                book_id = int(parts[0])
-                await self._show_rate_specific_book(query, user_db_id, book_id)
+            try:
+                parts = callback_data.replace("rate_", "").split("_")
+                if len(parts) == 2:
+                    book_id = int(parts[0])
+                    rating = int(parts[1])
+                    await self._rate_book_from_button(query, user_db_id, book_id, rating)
+                else:
+                    # Просто показываем меню оценки
+                    book_id = int(parts[0])
+                    await self._show_rate_specific_book(query, user_db_id, book_id)
+            except ValueError:
+                await query.edit_message_text(
+                    "❌ Ошибка оценки.",
+                    reply_markup=self._create_back_to_menu_keyboard()
+                )
+        
+        elif callback_data.startswith("finish_"):
+            try:
+                book_id = int(callback_data.replace("finish_", ""))
+                await self._finish_reading_book(query, user_db_id, book_id)
+            except ValueError:
+                await query.edit_message_text(
+                    "❌ Ошибка: неверный ID книги.",
+                    reply_markup=self._create_back_to_menu_keyboard()
+                )
         
         elif callback_data.startswith("remove_"):
-            book_id = int(callback_data.replace("remove_", ""))
-            await self._remove_book_from_collection(query, user_db_id, book_id)
-        
-        elif callback_data == "no_action":
-            # Ничего не делаем, просто сбрасываем callback
-            pass
+            try:
+                book_id = int(callback_data.replace("remove_", ""))
+                await self._remove_book_from_collection(query, user_db_id, book_id)
+            except ValueError:
+                await query.edit_message_text(
+                    "❌ Ошибка: неверный ID книги.",
+                    reply_markup=self._create_back_to_menu_keyboard()
+                )
         
         else:
             logger.warning(f"Неизвестный callback_data: {callback_data}")
@@ -655,28 +602,22 @@ class BookBot:
                 reply_markup=self._create_back_to_menu_keyboard()
             )
     
-    async def _error_handler(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-        """
-        Обработчик ошибок бота.
-        
-        Args:
-            update (Update): Объект обновления Telegram
-            context (ContextTypes.DEFAULT_TYPE): Контекст выполнения
-        """
+    async def error_handler(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Обработчик ошибок."""
         logger.error(f"Ошибка: {context.error}")
         
         try:
-            error_message = f"❌ Произошла ошибка: {context.error}"
-            
             if update and update.effective_message:
-                keyboard = self._create_back_to_menu_keyboard()
-                await update.effective_message.reply_text(error_message, reply_markup=keyboard)
+                await update.effective_message.reply_text(
+                    "❌ Произошла ошибка. Попробуйте позже.",
+                    reply_markup=self._create_back_to_menu_keyboard()
+                )
         except Exception as e:
             logger.error(f"Ошибка в обработчике ошибок: {e}")
     
     # Вспомогательные методы
     
-    def _create_main_menu_keyboard(self) -> InlineKeyboardMarkup:
+    def _create_main_menu_keyboard(self):
         """Создает клавиатуру главного меню."""
         keyboard = [
             [InlineKeyboardButton("📚 Мои книги", callback_data="mybooks")],
@@ -690,13 +631,13 @@ class BookBot:
         ]
         return InlineKeyboardMarkup(keyboard)
     
-    def _create_back_to_menu_keyboard(self) -> InlineKeyboardMarkup:
-        """Создает клавиатуру с кнопкой 'Главное меню'."""
+    def _create_back_to_menu_keyboard(self):
+        """Создает клавиатуру с кнопкой возврата."""
         return InlineKeyboardMarkup([[
             InlineKeyboardButton("🏠 Главное меню", callback_data="main_menu")
         ]])
     
-    async def _show_main_menu(self, query) -> None:
+    async def _show_main_menu(self, query):
         """Показывает главное меню."""
         keyboard = self._create_main_menu_keyboard()
         await query.edit_message_text(
@@ -704,13 +645,12 @@ class BookBot:
             reply_markup=keyboard
         )
     
-    async def _show_user_books(self, query, user_db_id: int) -> None:
+    async def _show_user_books(self, query, user_db_id):
         """Показывает книги пользователя."""
         try:
-            # Получаем все книги пользователя
-            all_books = self.user_manager.get_user_books(user_db_id)
+            books = self.user_manager.get_user_books(user_db_id)
             
-            if not all_books:
+            if not books:
                 keyboard = InlineKeyboardMarkup([[
                     InlineKeyboardButton("➕ Добавить книгу", callback_data="add_book"),
                     InlineKeyboardButton("🔍 Найти книгу", callback_data="search")
@@ -719,7 +659,7 @@ class BookBot:
                 ]])
                 
                 await query.edit_message_text(
-                    "📭 Ваша коллекция книг пуста.",
+                    "📭 У вас пока нет книг в коллекции.",
                     reply_markup=keyboard
                 )
                 return
@@ -732,9 +672,12 @@ class BookBot:
                 'dropped': []
             }
             
-            for book in all_books:
+            for book in books:
                 if book.status in books_by_status:
                     books_by_status[book.status].append(book)
+            
+            # Формируем сообщение
+            message_lines = ["📚 Ваша коллекция книг:\n"]
             
             status_names = {
                 'planned': '📅 Запланировано',
@@ -742,9 +685,6 @@ class BookBot:
                 'completed': '✅ Прочитано',
                 'dropped': '❌ Брошено'
             }
-            
-            # Формируем сообщение
-            message_lines = ["📚 Ваша коллекция книг:\n"]
             
             for status, books_list in books_by_status.items():
                 if books_list:
@@ -759,11 +699,6 @@ class BookBot:
                             rating = f" ⭐ {book.rating}" if book.rating else ""
                             message_lines.append(f"{i}. {short_title}{rating}")
             
-            # Если есть больше книг, чем показано
-            total_books = len(all_books)
-            if total_books > 15:
-                message_lines.append(f"\n... и еще {total_books - 15} книг")
-            
             keyboard = InlineKeyboardMarkup([[
                 InlineKeyboardButton("📖 Начать читать", callback_data="start_reading"),
                 InlineKeyboardButton("⭐ Оценить", callback_data="rate_book")
@@ -775,10 +710,7 @@ class BookBot:
                 InlineKeyboardButton("🏠 Главное меню", callback_data="main_menu")
             ]])
             
-            await query.edit_message_text(
-                "\n".join(message_lines),
-                reply_markup=keyboard
-            )
+            await query.edit_message_text("\n".join(message_lines), reply_markup=keyboard)
             
         except Exception as e:
             logger.error(f"Ошибка при показе книг пользователя: {e}")
@@ -787,29 +719,25 @@ class BookBot:
                 reply_markup=self._create_back_to_menu_keyboard()
             )
     
-    async def _show_search_menu(self, update_or_query) -> None:
+    async def _show_search_menu(self, update_or_query):
         """Показывает меню поиска."""
-        # Получаем список жанров
         genres = self.book_manager.get_all_genres()
         
-        # Создаем клавиатуру с жанрами (по 2 в строке)
+        # Создаем клавиатуру с жанрами
         keyboard_buttons = []
-        for i in range(0, len(genres), 2):
+        for i in range(0, min(len(genres), 8), 2):
             row = []
-            if i < len(genres):
-                row.append(InlineKeyboardButton(
-                    f"📂 {genres[i]}", 
-                    callback_data=f"genre_{genres[i]}"
-                ))
+            row.append(InlineKeyboardButton(
+                f"📂 {genres[i]}", 
+                callback_data=f"genre_{genres[i]}"
+            ))
             if i + 1 < len(genres):
                 row.append(InlineKeyboardButton(
                     f"📂 {genres[i+1]}", 
                     callback_data=f"genre_{genres[i+1]}"
                 ))
-            if row:
-                keyboard_buttons.append(row)
+            keyboard_buttons.append(row)
         
-        # Добавляем кнопки для текстового поиска и назад
         keyboard_buttons.append([
             InlineKeyboardButton("🔍 Поиск по названию/автору", callback_data="search_input")
         ])
@@ -818,7 +746,6 @@ class BookBot:
         ])
         
         keyboard = InlineKeyboardMarkup(keyboard_buttons)
-        
         text = "🔍 Поиск книг\n\nВыберите жанр или выполните поиск по названию/автору:"
         
         if hasattr(update_or_query, 'edit_message_text'):
@@ -826,17 +753,18 @@ class BookBot:
         else:
             await update_or_query.message.reply_text(text, reply_markup=keyboard)
     
-    async def _perform_search(self, update_or_query, query: str, genre: str) -> None:
-        """Выполняет поиск книг и показывает результаты."""
+    async def _perform_search(self, update_or_query, query: str, genre: str):
+        """Выполняет поиск книг."""
         try:
-            books = self.book_manager.search_books(query, genre, config.search_limit)
+            books = self.book_manager.search_books(query, genre, limit=10)
             
             if not books:
-                message = "📭 По вашему запросу ничего не найдено."
                 if query:
                     message = f"📭 По запросу '{query}' ничего не найдено."
                 elif genre:
                     message = f"📭 В жанре '{genre}' ничего не найдено."
+                else:
+                    message = "📭 Книги не найдены."
                 
                 keyboard = InlineKeyboardMarkup([[
                     InlineKeyboardButton("🔍 Новый поиск", callback_data="search"),
@@ -851,7 +779,7 @@ class BookBot:
             
             # Формируем сообщение с результатами
             if query:
-                title = f"🔍 Результаты поиска по запросу '{query}':"
+                title = f"🔍 Найдено по запросу '{query}':"
             elif genre:
                 title = f"🔍 Книги в жанре '{genre}':"
             else:
@@ -861,9 +789,10 @@ class BookBot:
             
             keyboard_buttons = []
             for i, book in enumerate(books, 1):
-                # Информация о книге
-                stats = book.statistics
-                rating_info = f" ⭐ {stats.get('avg_rating', 0)}/5" if stats.get('avg_rating', 0) > 0 else ""
+                # Получаем статистику для книги
+                stats = self.db.get_book_statistics(book.id)
+                
+                rating_info = f" ⭐ {stats.get('avg_rating', 0)}" if stats.get('avg_rating', 0) > 0 else ""
                 popularity_info = f" 👥 {stats.get('total_added', 0)}"
                 
                 message_lines.append(f"\n{i}. {book.title}")
@@ -910,9 +839,9 @@ class BookBot:
             else:
                 await update_or_query.message.reply_text(error_message, reply_markup=keyboard)
     
-    async def _show_add_book_menu(self, query, user_db_id: int) -> None:
+    async def _show_add_book_menu(self, query, user_db_id):
         """Показывает меню добавления книги."""
-        # Получаем несколько популярных книг для быстрого добавления
+        # Получаем несколько популярных книг
         popular_books = self.book_manager.get_top_books('popularity', limit=5)
         
         if not popular_books:
@@ -927,8 +856,8 @@ class BookBot:
             )
             return
         
-        # Формируем сообщение и клавиатуру
-        message_lines = ["📚 Выберите книгу для добавления:\n"]
+        # Формируем сообщение
+        message_lines = ["📚 Популярные книги для добавления:\n"]
         
         keyboard_buttons = []
         for book in popular_books:
@@ -946,8 +875,8 @@ class BookBot:
             
             keyboard_buttons.append([InlineKeyboardButton(button_text, callback_data=callback)])
             
-            # Добавляем информацию о книге в сообщение
-            stats = book.statistics
+            # Добавляем информацию о книге
+            stats = self.db.get_book_statistics(book.id)
             rating_info = f" ⭐ {stats.get('avg_rating', 0)}" if stats.get('avg_rating', 0) > 0 else ""
             message_lines.append(f"\n• {book.title}{rating_info}")
         
@@ -961,15 +890,11 @@ class BookBot:
         
         keyboard = InlineKeyboardMarkup(keyboard_buttons)
         
-        await query.edit_message_text(
-            "\n".join(message_lines),
-            reply_markup=keyboard
-        )
+        await query.edit_message_text("\n".join(message_lines), reply_markup=keyboard)
     
-    async def _add_book_from_button(self, query, user_db_id: int, book_id: int) -> None:
+    async def _add_book_from_button(self, query, user_db_id, book_id):
         """Добавляет книгу из кнопки."""
         try:
-            # Получаем информацию о книге
             book = self.book_manager.get_book(book_id)
             if not book:
                 await query.edit_message_text(
@@ -978,7 +903,6 @@ class BookBot:
                 )
                 return
             
-            # Добавляем книгу
             success = self.user_manager.add_book(user_db_id, book_id, 'planned')
             
             if not success:
@@ -991,13 +915,15 @@ class BookBot:
                 )
                 return
             
-            message = f"""✅ Книга добавлена в вашу коллекцию!
+            message = f"""✅ Книга добавлена!
 
-{book.get_formatted_info(include_stats=True)}
+{book.title}
+👤 {book.author}
+📂 {book.genre}
 
 📂 Статус: 📅 Запланировано
 
-Что вы хотите сделать дальше?"""
+Что дальше?"""
             
             keyboard = InlineKeyboardMarkup([[
                 InlineKeyboardButton("📖 Начать читать", callback_data=f"start_{book_id}"),
@@ -1016,9 +942,8 @@ class BookBot:
                 reply_markup=self._create_back_to_menu_keyboard()
             )
     
-    async def _show_start_reading_menu(self, query, user_db_id: int) -> None:
+    async def _show_start_reading_menu(self, query, user_db_id):
         """Показывает меню начала чтения."""
-        # Получаем запланированные книги
         planned_books = self.user_manager.get_user_books(user_db_id, 'planned')
         
         if not planned_books:
@@ -1035,7 +960,7 @@ class BookBot:
             )
             return
         
-        # Формируем сообщение и клавиатуру
+        # Формируем сообщение
         message_lines = ["📚 Выберите книгу для начала чтения:\n"]
         
         keyboard_buttons = []
@@ -1050,7 +975,8 @@ class BookBot:
             if book_info:
                 message_lines.append(f"\n• {book.title}")
                 message_lines.append(f"  👤 {book.author}")
-                message_lines.append(f"  📄 {book_info.total_pages} страниц")
+                if book_info.total_pages:
+                    message_lines.append(f"  📄 {book_info.total_pages} страниц")
         
         # Дополнительные кнопки
         keyboard_buttons.append([
@@ -1062,15 +988,11 @@ class BookBot:
         
         keyboard = InlineKeyboardMarkup(keyboard_buttons)
         
-        await query.edit_message_text(
-            "\n".join(message_lines),
-            reply_markup=keyboard
-        )
+        await query.edit_message_text("\n".join(message_lines), reply_markup=keyboard)
     
-    async def _start_reading_book(self, query, user_db_id: int, book_id: int) -> None:
+    async def _start_reading_book(self, query, user_db_id, book_id):
         """Начинает чтение книги."""
         try:
-            # Проверяем, есть ли книга у пользователя
             if not self.user_manager.has_book(user_db_id, book_id):
                 await query.edit_message_text(
                     "❌ У вас нет этой книги в коллекции.",
@@ -1081,7 +1003,6 @@ class BookBot:
                 )
                 return
             
-            # Обновляем статус
             success = self.user_manager.update_book_status(user_db_id, book_id, 'reading')
             
             if not success:
@@ -1091,7 +1012,6 @@ class BookBot:
                 )
                 return
             
-            # Получаем информацию о книге
             book = self.book_manager.get_book(book_id)
             if not book:
                 await query.edit_message_text(
@@ -1102,14 +1022,16 @@ class BookBot:
             
             message = f"""📖 Начинаем читать!
 
-{book.get_formatted_info(include_stats=False)}
+{book.title}
+👤 {book.author}
+📄 Всего страниц: {book.total_pages}
 
 📂 Статус: 📖 Читаю сейчас
 
-Чтобы обновить прогресс чтения, отправьте команду:
+Чтобы обновить прогресс, отправьте:
 /progress {book_id} <номер_страницы>
 
-Например:
+Пример:
 /progress {book_id} 50"""
             
             keyboard = InlineKeyboardMarkup([[
@@ -1129,7 +1051,7 @@ class BookBot:
                 reply_markup=self._create_back_to_menu_keyboard()
             )
     
-    async def _show_progress_instructions(self, query, book_id: int) -> None:
+    async def _show_progress_instructions(self, query, book_id):
         """Показывает инструкции по обновлению прогресса."""
         await query.edit_message_text(
             f"📊 Чтобы обновить прогресс чтения, отправьте команду:\n"
@@ -1142,10 +1064,9 @@ class BookBot:
             ]])
         )
     
-    async def _finish_reading_book(self, query, user_db_id: int, book_id: int) -> None:
+    async def _finish_reading_book(self, query, user_db_id, book_id):
         """Завершает чтение книги."""
         try:
-            # Проверяем, есть ли книга у пользователя
             if not self.user_manager.has_book(user_db_id, book_id):
                 await query.edit_message_text(
                     "❌ У вас нет этой книги в коллекции.",
@@ -1153,7 +1074,6 @@ class BookBot:
                 )
                 return
             
-            # Обновляем статус на "прочитано"
             success = self.user_manager.update_book_status(user_db_id, book_id, 'completed')
             
             if not success:
@@ -1163,7 +1083,6 @@ class BookBot:
                 )
                 return
             
-            # Получаем информацию о книге
             book = self.book_manager.get_book(book_id)
             if not book:
                 await query.edit_message_text(
@@ -1174,7 +1093,8 @@ class BookBot:
             
             message = f"""🎉 Поздравляем с прочтением книги!
 
-{book.get_formatted_info(include_stats=False)}
+{book.title}
+👤 {book.author}
 
 📂 Статус: ✅ Прочитано
 
@@ -1197,12 +1117,11 @@ class BookBot:
                 reply_markup=self._create_back_to_menu_keyboard()
             )
     
-    async def _show_user_stats(self, query, user_db_id: int) -> None:
+    async def _show_user_stats(self, query, user_db_id):
         """Показывает статистику пользователя."""
         try:
             stats = self.user_manager.get_stats(user_db_id)
             
-            # Формируем сообщение
             message_lines = [
                 "📊 Ваша статистика чтения:",
                 "",
@@ -1218,12 +1137,6 @@ class BookBot:
             if stats['avg_rating'] > 0:
                 stars = "⭐" * int(round(stats['avg_rating']))
                 message_lines.append(f"⭐ Средняя оценка: {stars} ({stats['avg_rating']}/5)")
-            
-            # Получаем рекомендации
-            if stats['completed'] == 0:
-                message_lines.extend(["", "💡 Совет: Начните читать книгу из раздела 'Запланировано'!"])
-            elif stats['reading'] == 0 and stats['planned'] > 0:
-                message_lines.extend(["", "💡 Совет: У вас есть запланированные книги. Начните читать одну из них!"])
             
             keyboard = InlineKeyboardMarkup([[
                 InlineKeyboardButton("📚 Мои книги", callback_data="mybooks"),
@@ -1242,9 +1155,8 @@ class BookBot:
                 reply_markup=self._create_back_to_menu_keyboard()
             )
     
-    async def _show_rate_book_menu(self, query, user_db_id: int) -> None:
+    async def _show_rate_book_menu(self, query, user_db_id):
         """Показывает меню оценки книг."""
-        # Получаем прочитанные книги без оценки
         completed_books = self.user_manager.get_user_books(user_db_id, 'completed')
         unrated_books = [book for book in completed_books if not book.rating]
         
@@ -1286,15 +1198,11 @@ class BookBot:
         
         keyboard = InlineKeyboardMarkup(keyboard_buttons)
         
-        await query.edit_message_text(
-            "\n".join(message_lines),
-            reply_markup=keyboard
-        )
+        await query.edit_message_text("\n".join(message_lines), reply_markup=keyboard)
     
-    async def _show_rate_specific_book(self, query, user_db_id: int, book_id: int) -> None:
+    async def _show_rate_specific_book(self, query, user_db_id, book_id):
         """Показывает меню оценки конкретной книги."""
         try:
-            # Проверяем, есть ли книга у пользователя
             book_info = self.user_manager.get_book_info(user_db_id, book_id)
             if not book_info or book_info.status != 'completed':
                 await query.edit_message_text(
@@ -1303,7 +1211,6 @@ class BookBot:
                 )
                 return
             
-            # Получаем информацию о книге
             book = self.book_manager.get_book(book_id)
             if not book:
                 await query.edit_message_text(
@@ -1312,7 +1219,7 @@ class BookBot:
                 )
                 return
             
-            message = f"⭐ Оцените книгу:\n\n{book.get_formatted_info(include_stats=False)}"
+            message = f"⭐ Оцените книгу:\n\n{book.title}\n👤 {book.author}"
             
             # Кнопки оценки
             keyboard_buttons = []
@@ -1339,10 +1246,9 @@ class BookBot:
                 reply_markup=self._create_back_to_menu_keyboard()
             )
     
-    async def _rate_book_from_button(self, query, user_db_id: int, book_id: int, rating: int) -> None:
+    async def _rate_book_from_button(self, query, user_db_id, book_id, rating):
         """Оценивает книгу из кнопки."""
         try:
-            # Оцениваем книгу
             success = self.user_manager.rate_book(user_db_id, book_id, rating)
             
             if not success:
@@ -1352,7 +1258,6 @@ class BookBot:
                 )
                 return
             
-            # Получаем информацию о книге
             book = self.book_manager.get_book(book_id)
             if not book:
                 await query.edit_message_text(
@@ -1365,6 +1270,8 @@ class BookBot:
                 return
             
             stars = "⭐" * rating
+            stats = self.db.get_book_statistics(book_id)
+            
             message = f"""✅ Спасибо за оценку!
 
 {book.title}
@@ -1372,8 +1279,8 @@ class BookBot:
 
 Ваша оценка: {stars} ({rating}/5)
 
-Общий рейтинг книги: {book.statistics.get('avg_rating', 0)}/5
-({book.statistics.get('rating_count', 0)} оценок)"""
+Общий рейтинг книги: {stats.get('avg_rating', 0)}/5
+({stats.get('rating_count', 0)} оценок)"""
             
             keyboard = InlineKeyboardMarkup([[
                 InlineKeyboardButton("⭐ Оценить другую книгу", callback_data="rate_book"),
@@ -1397,7 +1304,7 @@ class BookBot:
                 reply_markup=self._create_back_to_menu_keyboard()
             )
     
-    async def _show_top_books_menu(self, query) -> None:
+    async def _show_top_books_menu(self, query):
         """Показывает меню выбора критерия для топ книг."""
         keyboard = InlineKeyboardMarkup([[
             InlineKeyboardButton("⭐ По рейтингу", callback_data="top_rating"),
@@ -1412,15 +1319,15 @@ class BookBot:
             reply_markup=keyboard
         )
     
-    async def _show_top_books(self, update_or_query, criteria: str, filter_by: str = "") -> None:
+    async def _show_top_books(self, update_or_query, criteria: str, filter_by: str = ""):
         """Показывает топ книги по критерию."""
         try:
             # Определяем, что фильтровать
-            genre = filter_by if filter_by in self.book_manager.get_all_genres() else ""
+            genres = self.book_manager.get_all_genres()
+            genre = filter_by if filter_by in genres else ""
             author = filter_by if not genre and filter_by else ""
             
-            # Получаем топ книги
-            books = self.book_manager.get_top_books(criteria, genre, author, config.popular_limit)
+            books = self.book_manager.get_top_books(criteria, genre, author, limit=5)
             
             if not books:
                 message = "📭 Не найдено книг по выбранному критерию."
@@ -1455,8 +1362,8 @@ class BookBot:
             
             keyboard_buttons = []
             for i, book in enumerate(books, 1):
-                # Информация о книге
-                stats = book.statistics
+                # Получаем статистику
+                stats = self.db.get_book_statistics(book.id)
                 
                 if criteria == 'rating':
                     rating = stats.get('avg_rating', 0)
@@ -1514,41 +1421,8 @@ class BookBot:
             else:
                 await update_or_query.message.reply_text(error_message, reply_markup=keyboard)
     
-    async def _show_help_menu(self, query) -> None:
-        """Показывает меню помощи."""
-        help_text = """📚 BookBot - Помощник для учета книг
-
-📋 Основные возможности:
-• 🔍 Поиск книг по названию, автору или жанру
-• 📚 Управление личной коллекцией книг
-• 📖 Отслеживание прогресса чтения
-• ⭐ Оценка прочитанных книг
-• 📊 Просмотр статистики чтения
-• 🏆 Поиск самых популярных и высоко оцененных книг
-
-🎯 Как начать:
-1. Используйте 🔍 Поиск книг, чтобы найти интересующие вас книги
-2. Добавьте понравившиеся книги в свою коллекцию с помощью кнопки ➕
-3. Начните читать книгу из раздела 📖 Начать читать
-4. Обновляйте прогресс командой /progress <ID> <страница>
-5. После прочтения оцените книгу в разделе ⭐ Оценить книги
-
-💡 Советы:
-• Используйте кнопки меню для быстрого доступа к функциям
-• Команды также можно вводить вручную (см. /help)
-• Рейтинги книг помогают другим пользователям выбирать что читать
-
-Для возврата в главное меню нажмите кнопку ниже."""
-        
-        keyboard = InlineKeyboardMarkup([[
-            InlineKeyboardButton("📚 Главное меню", callback_data="main_menu"),
-            InlineKeyboardButton("🔍 Поиск книг", callback_data="search")
-        ]])
-        
-        await query.edit_message_text(help_text, reply_markup=keyboard)
-    
-    async def _remove_book_from_collection(self, query, user_db_id: int, book_id: int) -> None:
-        """Удаляет книгу из коллекции пользователя."""
+    async def _remove_book_from_collection(self, query, user_db_id, book_id):
+        """Удаляет книгу из коллекции."""
         try:
             success = self.user_manager.remove_book(user_db_id, book_id)
             
@@ -1578,57 +1452,15 @@ class BookBot:
         """
         Запускает бота.
         
-        Этот метод запускает долгоживущий процесс, который обрабатывает
-        входящие сообщения от пользователей Telegram.
+        Этот метод запускает бота в режиме опроса (polling).
         """
         logger.info("Запуск BookBot...")
         print("=" * 50)
         print(" BookBot запущен успешно!")
         print(" Бот готов к работе")
-        print(" База данных: " + str(config.db_path))
-        print(" Логи: " + str(config.log_path))
+        print(" База данных: data/books.db")
         print("=" * 50)
         print("Ожидание сообщений...")
         print("Для остановки нажмите Ctrl+C")
         
-        self.application.run_polling(allowed_updates=Update.ALL_TYPES)
-
-
-def main():
-    """
-    Основная функция запуска BookBot.
-    
-    Эта функция инициализирует и запускает Telegram бота.
-    Токен бота должен быть установлен в переменной окружения TELEGRAM_BOT_TOKEN
-    или введен пользователем при запуске.
-    
-    Raises:
-        SystemExit: Если не удалось запустить бота
-    """
-    print("=" * 50)
-    print(" Запуск BookBot - помощника для учета книг")
-    print("=" * 50)
-    
-    # Получаем токен бота
-    token = "8371793740:AAGyHz10Ro6JabxomkyjDGsjWhNaf3SUeMI"  # Ваш токен здесь
-    
-    if not token:
-        print(" Ошибка: Токен бота не найден.")
-        print("Пожалуйста, установите переменную окружения TELEGRAM_BOT_TOKEN")
-        print("или укажите токен в коде.")
-        sys.exit(1)
-    
-    try:
-        # Создаем и запускаем бота
-        bot = BookBot(token)
-        bot.run()
-    except KeyboardInterrupt:
-        logger.info("BookBot остановлен пользователем")
-    except Exception as e:
-        print(f" Критическая ошибка: {e}")
-        logger.critical(f"Критическая ошибка при запуске бота: {e}")
-        sys.exit(1)
-
-
-if __name__ == '__main__':
-    main()
+        self.application.run_polling(allowed_updates=None)

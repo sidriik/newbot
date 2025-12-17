@@ -1,16 +1,13 @@
 #!/usr/bin/env python3
 """
-database.py - Модуль для работы с базой данных SQLite BookBot
-
-Этот модуль содержит классы и функции для взаимодействия с базой данных,
-включая создание таблиц, добавление, удаление и поиск книг и записей о чтении.
+database.py - База данных книг для BookBot
 """
 
 import sqlite3
 import logging
 from typing import List, Dict, Any, Optional, Tuple
-from contextlib import closing
 from pathlib import Path
+from datetime import datetime
 
 
 class DatabaseError(Exception):
@@ -19,203 +16,182 @@ class DatabaseError(Exception):
 
 
 class Database:
-    """Класс для работы с базой данных книг и пользователей."""
+    """
+    Класс для управления базой данных SQLite книжного бота.
     
-    def __init__(self, db_path: str):
+    Обрабатывает все операции с книгами, пользователями и их коллекциями.
+    """
+    
+    def __init__(self, db_path: str = "data/books.db"):
         """
         Инициализация подключения к базе данных.
         
         Args:
-            db_path (str): Путь к файлу базы данных SQLite
+            db_path: Путь к файлу базы данных
             
         Raises:
-            DatabaseError: Если не удалось подключиться к базе данных
+            DatabaseError: Если не удалось создать/подключиться к БД
         """
         self.db_path = Path(db_path)
         self.logger = logging.getLogger(__name__)
         
         try:
-            # Создаем директорию для базы данных, если её нет
+            # Создаем директорию если не существует
             self.db_path.parent.mkdir(exist_ok=True, parents=True)
-            
-            # Инициализируем базу данных
             self._init_database()
             self.logger.info(f"База данных инициализирована: {self.db_path}")
         except Exception as e:
-            self.logger.error(f"Ошибка инициализации базы данных: {e}")
-            raise DatabaseError(f"Не удалось инициализировать базу данных: {e}")
+            self.logger.error(f"Ошибка инициализации БД: {e}")
+            raise DatabaseError(f"Не удалось инициализировать БД: {e}")
     
-    def _init_database(self) -> None:
-        """
-        Инициализирует таблицы базы данных.
-        
-        Создает таблицы books, users и user_books, если они не существуют.
-        Также заполняет таблицу books тестовыми данными.
-        """
-        try:
-            with closing(sqlite3.connect(self.db_path)) as conn:
-                cursor = conn.cursor()
-                
-                # Таблица книг
-                cursor.execute('''
-                    CREATE TABLE IF NOT EXISTS books (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        title TEXT NOT NULL,
-                        author TEXT NOT NULL,
-                        total_pages INTEGER NOT NULL DEFAULT 0,
-                        genre TEXT,
-                        description TEXT,
-                        added_count INTEGER DEFAULT 0,  -- сколько раз добавили
-                        current_readers INTEGER DEFAULT 0  -- сколько читают сейчас
-                    )
-                ''')
-                
-                # Таблица пользователей
-                cursor.execute('''
-                    CREATE TABLE IF NOT EXISTS users (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        telegram_id INTEGER UNIQUE NOT NULL,
-                        username TEXT,
-                        first_name TEXT,
-                        last_name TEXT,
-                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                    )
-                ''')
-                
-                # Таблица пользовательских книг
-                cursor.execute('''
-                    CREATE TABLE IF NOT EXISTS user_books (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        user_id INTEGER NOT NULL,
-                        book_id INTEGER NOT NULL,
-                        status TEXT CHECK(status IN ('planned', 'reading', 'completed', 'dropped')),
-                        current_page INTEGER DEFAULT 0,
-                        rating INTEGER CHECK(rating >= 1 AND rating <= 5),
-                        added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        FOREIGN KEY (user_id) REFERENCES users (id),
-                        FOREIGN KEY (book_id) REFERENCES books (id),
-                        UNIQUE(user_id, book_id)
-                    )
-                ''')
-                
-                # Создаем индексы для ускорения поиска
-                cursor.execute('CREATE INDEX IF NOT EXISTS idx_books_title ON books(title)')
-                cursor.execute('CREATE INDEX IF NOT EXISTS idx_books_author ON books(author)')
-                cursor.execute('CREATE INDEX IF NOT EXISTS idx_books_genre ON books(genre)')
-                cursor.execute('CREATE INDEX IF NOT EXISTS idx_user_books_user_id ON user_books(user_id)')
-                cursor.execute('CREATE INDEX IF NOT EXISTS idx_user_books_book_id ON user_books(book_id)')
-                
-                # Проверяем, есть ли книги в базе
-                cursor.execute("SELECT COUNT(*) FROM books")
-                count = cursor.fetchone()[0]
-                
-                if count == 0:
-                    self._populate_initial_books(cursor)
-                
-                conn.commit()
-                self.logger.info(f"База данных инициализирована. Книг в базе: {count}")
-                
-        except sqlite3.Error as e:
-            self.logger.error(f"Ошибка SQLite при инициализации: {e}")
-            raise DatabaseError(f"Ошибка SQLite: {e}")
+    def _get_connection(self):
+        """Создает соединение с базой данных."""
+        conn = sqlite3.connect(self.db_path)
+        conn.row_factory = sqlite3.Row
+        return conn
     
-    def _populate_initial_books(self, cursor: sqlite3.Cursor) -> None:
-        """
-        Заполняет базу данных начальным набором книг.
-        
-        Args:
-            cursor (sqlite3.Cursor): Курсор базы данных
-        """
-        initial_books = [
-            ("Преступление и наказание", "Федор Достоевский", 671, "Классика", 
-             "Роман о преступлении и его последствиях"),
+    def _init_database(self):
+        """Инициализирует таблицы в базе данных."""
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            
+            # Таблица книг
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS books (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    title TEXT NOT NULL,
+                    author TEXT NOT NULL,
+                    total_pages INTEGER DEFAULT 0,
+                    genre TEXT,
+                    description TEXT,
+                    added_count INTEGER DEFAULT 0,
+                    current_readers INTEGER DEFAULT 0,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            ''')
+            
+            # Таблица пользователей
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS users (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    telegram_id INTEGER UNIQUE NOT NULL,
+                    username TEXT,
+                    first_name TEXT,
+                    last_name TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            ''')
+            
+            # Таблица книг пользователей
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS user_books (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER NOT NULL,
+                    book_id INTEGER NOT NULL,
+                    status TEXT DEFAULT 'planned',
+                    current_page INTEGER DEFAULT 0,
+                    rating INTEGER CHECK(rating >= 1 AND rating <= 5),
+                    added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+                    FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE,
+                    UNIQUE(user_id, book_id)
+                )
+            ''')
+            
+            # Создаем индексы для ускорения поиска
+            cursor.execute('CREATE INDEX IF NOT EXISTS idx_books_title ON books(title)')
+            cursor.execute('CREATE INDEX IF NOT EXISTS idx_books_author ON books(author)')
+            cursor.execute('CREATE INDEX IF NOT EXISTS idx_books_genre ON books(genre)')
+            cursor.execute('CREATE INDEX IF NOT EXISTS idx_user_books_user ON user_books(user_id)')
+            cursor.execute('CREATE INDEX IF NOT EXISTS idx_user_books_status ON user_books(status)')
+            
+            # Добавляем тестовые книги если таблица пуста
+            cursor.execute("SELECT COUNT(*) FROM books")
+            if cursor.fetchone()[0] == 0:
+                self._add_sample_books(cursor)
+            
+            conn.commit()
+    
+    def _add_sample_books(self, cursor):
+        """Добавляет тестовые книги в базу данных."""
+        sample_books = [
             ("Мастер и Маргарита", "Михаил Булгаков", 480, "Классика", 
-             "Мистический роман о визите дьявола в Москву"),
-            ("1984", "Джордж Оруэлл", 328, "Антиутопия", 
-             "Роман о тоталитарном обществе"),
-            ("Гарри Поттер и философский камень", "Джоан Роулинг", 320, "Фэнтези", 
-             "Первая книга о юном волшебнике"),
-            ("Война и мир", "Лев Толстой", 1225, "Классика", 
-             "Эпопея о войне 1812 года"),
-            ("Маленький принц", "Антуан де Сент-Экзюпери", 96, "Притча", 
-             "Философская сказка для детей и взрослых"),
-            ("Три товарища", "Эрих Мария Ремарк", 480, "Роман", 
-             "Роман о дружбе и любви"),
-            ("Анна Каренина", "Лев Толстой", 864, "Классика", 
-             "Роман о любви и трагедии"),
-            ("Шерлок Холмс", "Артур Конан Дойл", 307, "Детектив", 
-             "Сборник рассказов о знаменитом сыщике"),
-            ("Гордость и предубеждение", "Джейн Остин", 432, "Роман", 
-             "Классика английской литературы"),
-            ("Зов Ктулху", "Говард Лавкрафт", 320, "Ужасы", 
-             "Сборник рассказов в жанре хоррор"),
-            ("Властелин Колец", "Джон Р. Р. Толкин", 1178, "Фэнтези", 
-             "Эпическая фэнтези-сага"),
-            ("Алхимик", "Пауло Коэльо", 208, "Роман", 
-             "Философская притча о поиске своего предназначения"),
-            ("Код да Винчи", "Дэн Браун", 489, "Детектив", 
+             "Философский роман о добре и зле, любви и творчестве"),
+            ("Преступление и наказание", "Федор Достоевский", 671, "Классика",
+             "Психологический роман о преступлении и его последствиях"),
+            ("1984", "Джордж Оруэлл", 328, "Антиутопия",
+             "Роман о тоталитарном обществе будущего"),
+            ("Гарри Поттер и философский камень", "Джоан Роулинг", 320, "Фэнтези",
+             "Первая книга о юном волшебнике Гарри Поттере"),
+            ("Маленький принц", "Антуан де Сент-Экзюпери", 96, "Философская сказка",
+             "Сказка-притча о дружбе, любви и ответственности"),
+            ("Война и мир", "Лев Толстой", 1225, "Классика",
+             "Эпопея о русском обществе во время войн с Наполеоном"),
+            ("Три товарища", "Эрих Мария Ремарк", 480, "Роман",
+             "Роман о дружбе, любви и потерях в послевоенной Германии"),
+            ("Алхимик", "Пауло Коэльо", 208, "Роман",
+             "Притча о поиске своего предназначения"),
+            ("Шерлок Холмс. Сборник рассказов", "Артур Конан Дойл", 307, "Детектив",
+             "Рассказы о знаменитом сыщике Шерлоке Холмсе"),
+            ("Гордость и предубеждение", "Джейн Остин", 432, "Роман",
+             "Классика английской литературы о любви и социальных предрассудках"),
+            ("Метро 2033", "Дмитрий Глуховский", 384, "Постапокалипсис",
+             "Роман о жизни в московском метро после ядерной войны"),
+            ("Код да Винчи", "Дэн Браун", 489, "Детектив",
              "Детективный роман с историческими загадками"),
-            ("451° по Фаренгейту", "Рэй Брэдбери", 256, "Антиутопия", 
-             "Роман о мире, где книги запрещены"),
+            ("451° по Фаренгейту", "Рэй Брэдбери", 256, "Антиутопия",
+             "Роман о мире, где книги находятся под запретом"),
+            ("Убить пересмешника", "Харпер Ли", 376, "Роман",
+             "Роман о расовых предрассудках в американском Юге"),
+            ("Портрет Дориана Грея", "Оскар Уайльд", 254, "Классика",
+             "Философский роман о красоте, морали и вечной молодости")
         ]
         
         cursor.executemany('''
             INSERT INTO books (title, author, total_pages, genre, description)
             VALUES (?, ?, ?, ?, ?)
-        ''', initial_books)
-        
-        self.logger.info(f"Добавлено {len(initial_books)} начальных книг")
+        ''', sample_books)
     
     def get_book(self, book_id: int) -> Optional[Dict[str, Any]]:
         """
-        Получить книгу по ID.
+        Получает книгу по ID.
         
         Args:
-            book_id (int): ID книги
+            book_id: ID книги
             
         Returns:
-            Optional[Dict[str, Any]]: Словарь с данными книги или None, если книга не найдена
+            Словарь с данными книги или None если не найдена
             
         Raises:
-            DatabaseError: Если произошла ошибка при запросе
+            DatabaseError: При ошибке запроса
         """
         try:
-            with closing(sqlite3.connect(self.db_path)) as conn:
-                conn.row_factory = sqlite3.Row
+            with self._get_connection() as conn:
                 cursor = conn.cursor()
-                
                 cursor.execute("SELECT * FROM books WHERE id = ?", (book_id,))
-                result = cursor.fetchone()
-                
-                if result:
-                    book = dict(result)
-                    # Получаем статистику по книге
-                    book['statistics'] = self.get_book_statistics(book_id)
-                    return book
-                return None
-                
+                row = cursor.fetchone()
+                return dict(row) if row else None
         except sqlite3.Error as e:
-            self.logger.error(f"Ошибка при получении книги {book_id}: {e}")
-            raise DatabaseError(f"Ошибка при получении книги: {e}")
+            self.logger.error(f"Ошибка получения книги {book_id}: {e}")
+            raise DatabaseError(f"Ошибка получения книги: {e}")
     
     def search_books(self, query: str = "", genre: str = "", limit: int = 10) -> List[Dict[str, Any]]:
         """
-        Поиск книг по запросу и/или жанру.
+        Ищет книги по различным критериям.
         
         Args:
-            query (str): Поисковый запрос (ищется в названии и авторе)
-            genre (str): Жанр для фильтрации
-            limit (int): Максимальное количество результатов
+            query: Строка для поиска в названии и авторе
+            genre: Жанр для фильтрации
+            limit: Максимальное количество результатов
             
         Returns:
-            List[Dict[str, Any]]: Список найденных книг
+            Список найденных книг
             
         Raises:
-            DatabaseError: Если произошла ошибка при поиске
+            DatabaseError: При ошибке поиска
         """
         try:
-            with closing(sqlite3.connect(self.db_path)) as conn:
-                conn.row_factory = sqlite3.Row
+            with self._get_connection() as conn:
                 cursor = conn.cursor()
                 
                 sql = "SELECT * FROM books WHERE 1=1"
@@ -223,8 +199,8 @@ class Database:
                 
                 if query:
                     sql += " AND (title LIKE ? OR author LIKE ?)"
-                    search_pattern = f"%{query}%"
-                    params.extend([search_pattern, search_pattern])
+                    search_term = f"%{query}%"
+                    params.extend([search_term, search_term])
                 
                 if genre:
                     sql += " AND genre = ?"
@@ -234,95 +210,93 @@ class Database:
                 params.append(limit)
                 
                 cursor.execute(sql, params)
-                results = cursor.fetchall()
-                
-                books = []
-                for row in results:
-                    book = dict(row)
-                    book['statistics'] = self.get_book_statistics(book['id'])
-                    books.append(book)
-                
-                return books
+                return [dict(row) for row in cursor.fetchall()]
                 
         except sqlite3.Error as e:
-            self.logger.error(f"Ошибка при поиске книг: {e}")
-            raise DatabaseError(f"Ошибка при поиске книг: {e}")
+            self.logger.error(f"Ошибка поиска книг: {e}")
+            raise DatabaseError(f"Ошибка поиска книг: {e}")
     
     def get_book_statistics(self, book_id: int) -> Dict[str, Any]:
         """
-        Получить статистику по книге.
+        Получает статистику по книге.
         
         Args:
-            book_id (int): ID книги
+            book_id: ID книги
             
         Returns:
-            Dict[str, Any]: Статистика книги
+            Словарь со статистикой
             
         Raises:
-            DatabaseError: Если произошла ошибка при запросе
+            DatabaseError: При ошибке запроса
         """
         try:
-            with closing(sqlite3.connect(self.db_path)) as conn:
+            with self._get_connection() as conn:
                 cursor = conn.cursor()
                 
-                # Общее количество добавлений
                 cursor.execute('''
-                    SELECT COUNT(*) as total_added,
-                           COUNT(CASE WHEN status = 'reading' THEN 1 END) as currently_reading,
-                           AVG(rating) as avg_rating,
-                           COUNT(rating) as rating_count
-                    FROM user_books 
-                    WHERE book_id = ?
+                    SELECT 
+                        COUNT(ub.id) as total_added,
+                        COUNT(CASE WHEN ub.status = 'reading' THEN 1 END) as currently_reading,
+                        AVG(ub.rating) as avg_rating,
+                        COUNT(ub.rating) as rating_count
+                    FROM books b
+                    LEFT JOIN user_books ub ON b.id = ub.book_id
+                    WHERE b.id = ?
+                    GROUP BY b.id
                 ''', (book_id,))
                 
-                stats = cursor.fetchone()
-                if stats:
+                result = cursor.fetchone()
+                if result:
+                    avg_rating = result['avg_rating'] or 0
                     return {
-                        'total_added': stats[0] or 0,
-                        'currently_reading': stats[1] or 0,
-                        'avg_rating': round(stats[2] or 0, 2),
-                        'rating_count': stats[3] or 0
+                        'total_added': result['total_added'] or 0,
+                        'currently_reading': result['currently_reading'] or 0,
+                        'avg_rating': round(float(avg_rating), 2),
+                        'rating_count': result['rating_count'] or 0
                     }
-                return {'total_added': 0, 'currently_reading': 0, 'avg_rating': 0, 'rating_count': 0}
+                return {
+                    'total_added': 0,
+                    'currently_reading': 0,
+                    'avg_rating': 0.0,
+                    'rating_count': 0
+                }
                 
         except sqlite3.Error as e:
-            self.logger.error(f"Ошибка при получении статистики книги {book_id}: {e}")
-            raise DatabaseError(f"Ошибка при получении статистики: {e}")
+            self.logger.error(f"Ошибка получения статистики книги {book_id}: {e}")
+            raise DatabaseError(f"Ошибка получения статистики: {e}")
     
     def get_top_books(self, criteria: str = "rating", genre: str = "", 
                      author: str = "", limit: int = 5) -> List[Dict[str, Any]]:
         """
-        Получить топ книг по рейтингу или популярности.
+        Получает топ книг по указанному критерию.
         
         Args:
-            criteria (str): Критерий сортировки ('rating' или 'popularity')
-            genre (str): Жанр для фильтрации
-            author (str): Автор для фильтрации
-            limit (int): Максимальное количество результатов
+            criteria: 'rating' или 'popularity'
+            genre: Фильтр по жанру
+            author: Фильтр по автору
+            limit: Количество результатов
             
         Returns:
-            List[Dict[str, Any]]: Список книг
+            Список книг
             
         Raises:
-            DatabaseError: Если произошла ошибка при запросе
-            ValueError: Если передан неверный критерий
+            ValueError: При неверном критерии
+            DatabaseError: При ошибке запроса
         """
         if criteria not in ['rating', 'popularity']:
             raise ValueError("Критерий должен быть 'rating' или 'popularity'")
         
         try:
-            with closing(sqlite3.connect(self.db_path)) as conn:
-                conn.row_factory = sqlite3.Row
+            with self._get_connection() as conn:
                 cursor = conn.cursor()
                 
-                # В зависимости от критерия выбираем разные SQL-запросы
                 if criteria == 'rating':
                     sql = '''
                         SELECT b.*, 
                                COALESCE(AVG(ub.rating), 0) as calculated_rating,
                                COUNT(ub.id) as total_added
                         FROM books b
-                        LEFT JOIN user_books ub ON b.id = ub.book_id AND ub.rating IS NOT NULL
+                        LEFT JOIN user_books ub ON b.id = ub.book_id
                         WHERE 1=1
                     '''
                 else:  # popularity
@@ -348,53 +322,44 @@ class Database:
                 if criteria == 'rating':
                     sql += '''
                         GROUP BY b.id
-                        HAVING COUNT(ub.rating) >= 1
+                        HAVING COUNT(ub.rating) > 0
                         ORDER BY calculated_rating DESC, total_added DESC
-                        LIMIT ?
                     '''
                 else:
                     sql += '''
                         GROUP BY b.id
                         ORDER BY total_added DESC, currently_reading DESC
-                        LIMIT ?
                     '''
                 
+                sql += " LIMIT ?"
                 params.append(limit)
                 
                 cursor.execute(sql, params)
-                results = cursor.fetchall()
-                
-                books = []
-                for row in results:
-                    book = dict(row)
-                    book['statistics'] = self.get_book_statistics(book['id'])
-                    books.append(book)
-                
-                return books
+                return [dict(row) for row in cursor.fetchall()]
                 
         except sqlite3.Error as e:
-            self.logger.error(f"Ошибка при получении топ книг: {e}")
-            raise DatabaseError(f"Ошибка при получении топ книг: {e}")
+            self.logger.error(f"Ошибка получения топ книг: {e}")
+            raise DatabaseError(f"Ошибка получения топ книг: {e}")
     
     def get_or_create_user(self, telegram_id: int, username: str = "", 
                           first_name: str = "", last_name: str = "") -> int:
         """
-        Получить или создать пользователя.
+        Получает или создает пользователя.
         
         Args:
-            telegram_id (int): Telegram ID пользователя
-            username (str): Имя пользователя в Telegram
-            first_name (str): Имя пользователя
-            last_name (str): Фамилия пользователя
+            telegram_id: Telegram ID пользователя
+            username: Имя пользователя в Telegram
+            first_name: Имя
+            last_name: Фамилия
             
         Returns:
-            int: ID пользователя в базе данных
+            ID пользователя в базе
             
         Raises:
-            DatabaseError: Если произошла ошибка при запросе
+            DatabaseError: При ошибке запроса
         """
         try:
-            with closing(sqlite3.connect(self.db_path)) as conn:
+            with self._get_connection() as conn:
                 cursor = conn.cursor()
                 
                 # Проверяем существование пользователя
@@ -405,7 +370,7 @@ class Database:
                 result = cursor.fetchone()
                 
                 if result:
-                    return result[0]
+                    return result['id']
                 
                 # Создаем нового пользователя
                 cursor.execute('''
@@ -417,38 +382,38 @@ class Database:
                 return cursor.lastrowid
                 
         except sqlite3.Error as e:
-            self.logger.error(f"Ошибка при создании пользователя: {e}")
-            raise DatabaseError(f"Ошибка при создании пользователя: {e}")
+            self.logger.error(f"Ошибка создания пользователя: {e}")
+            raise DatabaseError(f"Ошибка создания пользователя: {e}")
     
     def add_user_book(self, user_id: int, book_id: int, status: str = "planned") -> bool:
         """
-        Добавить книгу пользователю.
+        Добавляет книгу пользователю.
         
         Args:
-            user_id (int): ID пользователя
-            book_id (int): ID книги
-            status (str): Статус книги
+            user_id: ID пользователя
+            book_id: ID книги
+            status: Статус книги
             
         Returns:
-            bool: True если успешно, False если книга уже добавлена
+            True если успешно, False если книга уже добавлена
             
         Raises:
-            DatabaseError: Если произошла ошибка при запросе
+            DatabaseError: При ошибке запроса
         """
         try:
-            with closing(sqlite3.connect(self.db_path)) as conn:
+            with self._get_connection() as conn:
                 cursor = conn.cursor()
                 
                 # Проверяем, есть ли уже такая книга у пользователя
-                cursor.execute('''
-                    SELECT id FROM user_books 
-                    WHERE user_id = ? AND book_id = ?
-                ''', (user_id, book_id))
+                cursor.execute(
+                    "SELECT id FROM user_books WHERE user_id = ? AND book_id = ?",
+                    (user_id, book_id)
+                )
                 
                 if cursor.fetchone():
                     return False
                 
-                # Добавляем книгу пользователю
+                # Добавляем книгу
                 cursor.execute('''
                     INSERT INTO user_books (user_id, book_id, status)
                     VALUES (?, ?, ?)
@@ -466,25 +431,25 @@ class Database:
                 return True
                 
         except sqlite3.Error as e:
-            self.logger.error(f"Ошибка при добавлении книги пользователю: {e}")
-            raise DatabaseError(f"Ошибка при добавлении книги пользователю: {e}")
+            self.logger.error(f"Ошибка добавления книги пользователю: {e}")
+            raise DatabaseError(f"Ошибка добавления книги пользователю: {e}")
     
     def remove_user_book(self, user_id: int, book_id: int) -> bool:
         """
-        Удалить книгу у пользователя.
+        Удаляет книгу у пользователя.
         
         Args:
-            user_id (int): ID пользователя
-            book_id (int): ID книги
+            user_id: ID пользователя
+            book_id: ID книги
             
         Returns:
-            bool: True если успешно, False если книга не найдена
+            True если успешно, False если книга не найдена
             
         Raises:
-            DatabaseError: Если произошла ошибка при запросе
+            DatabaseError: При ошибке запроса
         """
         try:
-            with closing(sqlite3.connect(self.db_path)) as conn:
+            with self._get_connection() as conn:
                 cursor = conn.cursor()
                 
                 # Получаем статус книги перед удалением
@@ -497,7 +462,7 @@ class Database:
                 if not result:
                     return False
                 
-                status = result[0]
+                status = result['status']
                 
                 # Удаляем запись
                 cursor.execute('''
@@ -517,28 +482,28 @@ class Database:
                 return True
                 
         except sqlite3.Error as e:
-            self.logger.error(f"Ошибка при удалении книги у пользователя: {e}")
-            raise DatabaseError(f"Ошибка при удалении книги у пользователя: {e}")
+            self.logger.error(f"Ошибка удаления книги у пользователя: {e}")
+            raise DatabaseError(f"Ошибка удаления книги у пользователя: {e}")
     
     def update_book_status(self, user_id: int, book_id: int, 
                           status: str, current_page: int = 0) -> bool:
         """
-        Обновить статус книги у пользователя.
+        Обновляет статус книги у пользователя.
         
         Args:
-            user_id (int): ID пользователя
-            book_id (int): ID книги
-            status (str): Новый статус
-            current_page (int): Текущая страница
+            user_id: ID пользователя
+            book_id: ID книги
+            status: Новый статус
+            current_page: Текущая страница
             
         Returns:
-            bool: True если успешно, False если книга не найдена
+            True если успешно, False если книга не найдена
             
         Raises:
-            DatabaseError: Если произошла ошибка при запросе
+            DatabaseError: При ошибке запроса
         """
         try:
-            with closing(sqlite3.connect(self.db_path)) as conn:
+            with self._get_connection() as conn:
                 cursor = conn.cursor()
                 
                 # Получаем старый статус
@@ -551,7 +516,7 @@ class Database:
                 if not result:
                     return False
                 
-                old_status = result[0]
+                old_status = result['status']
                 
                 # Обновляем статус
                 cursor.execute('''
@@ -560,9 +525,8 @@ class Database:
                     WHERE user_id = ? AND book_id = ?
                 ''', (status, current_page, user_id, book_id))
                 
-                # Обновляем статистику книги
+                # Обновляем статистику книги при изменении статуса чтения
                 if old_status != status:
-                    # Уменьшаем счетчик для старого статуса
                     if old_status == 'reading':
                         cursor.execute('''
                             UPDATE books 
@@ -570,7 +534,6 @@ class Database:
                             WHERE id = ?
                         ''', (book_id,))
                     
-                    # Увеличиваем счетчик для нового статуса
                     if status == 'reading':
                         cursor.execute('''
                             UPDATE books 
@@ -582,30 +545,30 @@ class Database:
                 return True
                 
         except sqlite3.Error as e:
-            self.logger.error(f"Ошибка при обновлении статуса книги: {e}")
-            raise DatabaseError(f"Ошибка при обновлении статуса книги: {e}")
+            self.logger.error(f"Ошибка обновления статуса книги: {e}")
+            raise DatabaseError(f"Ошибка обновления статуса книги: {e}")
     
     def rate_book(self, user_id: int, book_id: int, rating: int) -> bool:
         """
-        Оценить книгу.
+        Оценивает книгу.
         
         Args:
-            user_id (int): ID пользователя
-            book_id (int): ID книги
-            rating (int): Оценка от 1 до 5
+            user_id: ID пользователя
+            book_id: ID книги
+            rating: Оценка от 1 до 5
             
         Returns:
-            bool: True если успешно, False если книга не найдена
+            True если успешно, False если книга не найдена
             
         Raises:
-            DatabaseError: Если произошла ошибка при запросе
-            ValueError: Если оценка не в диапазоне 1-5
+            ValueError: Если оценка вне диапазона 1-5
+            DatabaseError: При ошибке запроса
         """
         if rating < 1 or rating > 5:
             raise ValueError("Оценка должна быть от 1 до 5")
         
         try:
-            with closing(sqlite3.connect(self.db_path)) as conn:
+            with self._get_connection() as conn:
                 cursor = conn.cursor()
                 
                 # Проверяем, есть ли книга у пользователя
@@ -628,26 +591,25 @@ class Database:
                 return True
                 
         except sqlite3.Error as e:
-            self.logger.error(f"Ошибка при оценке книги: {e}")
-            raise DatabaseError(f"Ошибка при оценке книги: {e}")
+            self.logger.error(f"Ошибка оценки книги: {e}")
+            raise DatabaseError(f"Ошибка оценки книги: {e}")
     
     def get_user_books(self, user_id: int, status: str = None) -> List[Dict[str, Any]]:
         """
-        Получить книги пользователя.
+        Получает книги пользователя.
         
         Args:
-            user_id (int): ID пользователя
-            status (str, optional): Статус для фильтрации
+            user_id: ID пользователя
+            status: Статус для фильтрации
             
         Returns:
-            List[Dict[str, Any]]: Список книг пользователя
+            Список книг пользователя
             
         Raises:
-            DatabaseError: Если произошла ошибка при запросе
+            DatabaseError: При ошибке запроса
         """
         try:
-            with closing(sqlite3.connect(self.db_path)) as conn:
-                conn.row_factory = sqlite3.Row
+            with self._get_connection() as conn:
                 cursor = conn.cursor()
                 
                 sql = '''
@@ -665,29 +627,27 @@ class Database:
                 sql += " ORDER BY ub.added_at DESC"
                 
                 cursor.execute(sql, params)
-                results = cursor.fetchall()
-                
-                return [dict(row) for row in results]
+                return [dict(row) for row in cursor.fetchall()]
                 
         except sqlite3.Error as e:
-            self.logger.error(f"Ошибка при получении книг пользователя: {e}")
-            raise DatabaseError(f"Ошибка при получении книг пользователя: {e}")
+            self.logger.error(f"Ошибка получения книг пользователя: {e}")
+            raise DatabaseError(f"Ошибка получения книг пользователя: {e}")
     
     def get_user_stats(self, user_id: int) -> Dict[str, Any]:
         """
-        Получить статистику пользователя.
+        Получает статистику пользователя.
         
         Args:
-            user_id (int): ID пользователя
+            user_id: ID пользователя
             
         Returns:
-            Dict[str, Any]: Статистика пользователя
+            Словарь со статистикой
             
         Raises:
-            DatabaseError: Если произошла ошибка при запросе
+            DatabaseError: При ошибке запроса
         """
         try:
-            with closing(sqlite3.connect(self.db_path)) as conn:
+            with self._get_connection() as conn:
                 cursor = conn.cursor()
                 
                 cursor.execute('''
@@ -706,13 +666,13 @@ class Database:
                 result = cursor.fetchone()
                 if result:
                     return {
-                        'total': result[0] or 0,
-                        'planned': result[1] or 0,
-                        'reading': result[2] or 0,
-                        'completed': result[3] or 0,
-                        'dropped': result[4] or 0,
-                        'avg_rating': round(result[5] or 0, 2),
-                        'total_pages_read': result[6] or 0
+                        'total': result['total'] or 0,
+                        'planned': result['planned'] or 0,
+                        'reading': result['reading'] or 0,
+                        'completed': result['completed'] or 0,
+                        'dropped': result['dropped'] or 0,
+                        'avg_rating': round(float(result['avg_rating'] or 0), 2),
+                        'total_pages_read': result['total_pages_read'] or 0
                     }
                 return {
                     'total': 0, 'planned': 0, 'reading': 0, 
@@ -721,5 +681,25 @@ class Database:
                 }
                 
         except sqlite3.Error as e:
-            self.logger.error(f"Ошибка при получении статистики пользователя: {e}")
-            raise DatabaseError(f"Ошибка при получении статистики пользователя: {e}")
+            self.logger.error(f"Ошибка получения статистики пользователя: {e}")
+            raise DatabaseError(f"Ошибка получения статистики пользователя: {e}")
+    
+    def get_all_genres(self) -> List[str]:
+        """
+        Получает список всех уникальных жанров.
+        
+        Returns:
+            Список жанров
+        """
+        try:
+            with self._get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT DISTINCT genre FROM books WHERE genre IS NOT NULL ORDER BY genre")
+                return [row['genre'] for row in cursor.fetchall()]
+        except sqlite3.Error as e:
+            self.logger.error(f"Ошибка получения жанров: {e}")
+            return ["Классика", "Фэнтези", "Роман", "Детектив", "Антиутопия"]
+    
+    def close(self):
+        """Закрывает соединение с базой данных."""
+        pass  # SQLite автоматически закрывает соединение
