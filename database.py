@@ -26,7 +26,7 @@ class BookDatabase:
             conn = self.get_connection()
             cursor = conn.cursor()
             
-            # Таблица книг с количеством страниц
+            # Таблица книг
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS books (
                     id INTEGER PRIMARY KEY,
@@ -40,14 +40,21 @@ class BookDatabase:
             
             # Проверяем, есть ли уже книги
             cursor.execute("SELECT COUNT(*) as count FROM books")
-            if cursor.fetchone()['count'] == 0:
+            row = cursor.fetchone()
+            book_count = row['count'] if row else 0
+            
+            if book_count == 0:
                 self._add_sample_books(conn)
+                cursor.execute("SELECT COUNT(*) as count FROM books")
+                new_count = cursor.fetchone()['count']
+                logger.info(f"Database initialized with {new_count} books")
+            else:
+                logger.info(f"Database already contains {book_count} books")
             
             conn.commit()
             conn.close()
-            logger.info("База данных инициализирована")
         except Exception as e:
-            logger.error(f"Ошибка инициализации БД: {e}")
+            logger.error(f"Error initializing database: {e}")
     
     def _add_sample_books(self, conn):
         """Добавляет тестовые книги в базу"""
@@ -76,78 +83,81 @@ class BookDatabase:
                 VALUES (?, ?, ?, ?, ?, ?)
             ''', book)
         
-        logger.info(f"Добавлено {len(sample_books)} тестовых книг")
+        logger.info(f"Added {len(sample_books)} sample books")
     
     def search_books(self, query, limit=15):
         """Ищет книги по названию или автору"""
         try:
-            conn = self.get_connection()
-            cursor = conn.cursor()
-            
             search_term = f"%{query}%"
-            cursor.execute('''
-                SELECT id, title, author, genre, description, total_pages
-                FROM books
-                WHERE title LIKE ? OR author LIKE ?
-                ORDER BY title
-                LIMIT ?
-            ''', (search_term, search_term, limit))
-            
-            results = []
-            for row in cursor:
-                results.append({
-                    'id': row['id'],
-                    'title': row['title'],
-                    'author': row['author'],
-                    'genre': row['genre'],
-                    'description': row['description'],
-                    'total_pages': row['total_pages']
-                })
-            
-            conn.close()
-            return results
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                
+                cursor.execute('''
+                    SELECT id, title, author, genre, description, total_pages
+                    FROM books
+                    WHERE title LIKE ? OR author LIKE ?
+                    ORDER BY title
+                    LIMIT ?
+                ''', (search_term, search_term, limit))
+                
+                results = []
+                for row in cursor:
+                    results.append({
+                        'id': row['id'],
+                        'title': row['title'],
+                        'author': row['author'],
+                        'genre': row['genre'],
+                        'description': row['description'],
+                        'total_pages': row['total_pages']
+                    })
+                
+                return results
         except Exception as e:
-            logger.error(f"Ошибка поиска: {e}")
+            logger.error(f"Error searching books: {e}")
             return []
     
     def get_book(self, book_id):
         """Получает книгу по ID"""
         try:
-            conn = self.get_connection()
-            cursor = conn.cursor()
-            
-            cursor.execute('SELECT * FROM books WHERE id = ?', (book_id,))
-            row = cursor.fetchone()
-            
-            conn.close()
-            
-            if row:
-                return {
-                    'id': row['id'],
-                    'title': row['title'],
-                    'author': row['author'],
-                    'genre': row['genre'],
-                    'description': row['description'],
-                    'total_pages': row['total_pages']
-                }
-            return None
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                
+                cursor.execute('SELECT * FROM books WHERE id = ?', (book_id,))
+                row = cursor.fetchone()
+                
+                if row:
+                    return {
+                        'id': row['id'],
+                        'title': row['title'],
+                        'author': row['author'],
+                        'genre': row['genre'],
+                        'description': row['description'],
+                        'total_pages': row['total_pages']
+                    }
+                return None
         except Exception as e:
-            logger.error(f"Ошибка получения книги: {e}")
+            logger.error(f"Error getting book {book_id}: {e}")
             return None
     
     def get_all_books(self):
         """Получает все книги"""
         try:
-            conn = self.get_connection()
-            cursor = conn.cursor()
-            
-            cursor.execute('SELECT id, title, author, total_pages FROM books ORDER BY title')
-            results = [dict(row) for row in cursor]
-            
-            conn.close()
-            return results
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                
+                cursor.execute('SELECT id, title, author, total_pages FROM books ORDER BY title')
+                results = []
+                for row in cursor:
+                    results.append({
+                        'id': row['id'],
+                        'title': row['title'],
+                        'author': row['author'],
+                        'total_pages': row['total_pages']
+                    })
+                
+                return results
         except Exception as e:
-            logger.error(f"Ошибка получения всех книг: {e}")
+            logger.error(f"Error getting all books: {e}")
             return []
 
 # Создаем глобальный экземпляр базы данных
