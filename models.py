@@ -200,7 +200,4 @@ class UserManager:
         except Exception as e:
             print(f"Ошибка расчета прогресса чтения: {e}")
             return 0.0
-    def get_reading_progress(self, user_id):
-        try:  
-            books = self.get_user_books(user_id, 'reading')
-
+    
