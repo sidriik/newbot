@@ -3,16 +3,8 @@
 telegram_bot.py - Telegram бот для учета книг BookBot
 """
 
-import logging
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import (
-    Application, CommandHandler, MessageHandler, CallbackQueryHandler,
-    ContextTypes, filters
-)
-
 from database import Database
 from models import UserManager, BookManager, Book, UserBook
-
 
 # Настройка логирования
 logging.basicConfig(
