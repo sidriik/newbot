@@ -195,32 +195,91 @@ async def add_command(update: Update, context):
 
 async def addbook_command(update: Update, context):
     """Добавить новую книгу в общий каталог."""
-    if not context.args or len(context.args) < 4:
+    if not context.args:
         await update.message.reply_text(
-            "📝 Использование: /addbook <название> <автор> <страницы> <жанр> [описание]\n\n"
-            "Примеры:\n"
+            "📝 **Использование:** /addbook <название> <автор> <страницы> <жанр> [описание]\n\n"
+            "**Примеры:**\n"
             '/addbook "1984" "Джордж Оруэлл" 328 "Антиутопия" "Роман о тоталитарном обществе"\n'
             '/addbook "Мастер и Маргарита" "Михаил Булгаков" 480 "Классика"\n\n'
-            '📌 Название и автор в кавычках, если содержат пробелы!'
+            '📌 **Название и автор в кавычках, если содержат пробелы!**\n'
+            '📌 **ОБЯЗАТЕЛЬНО** используйте кавычки для названия и автора с пробелами!\n\n'
+            '**Правильно:** /addbook "Война и мир" "Лев Толстой" 1300 "Классика"\n'
+            '**Неправильно:** /addbook Война и мир Лев Толстой 1300 Классика'
         )
         return
     
     try:
-        # Разбираем аргументы
-        args = context.args
-        title = args[0].strip('"')
-        author = args[1].strip('"')
-        pages = int(args[2])
-        genre = args[3].strip('"')
+        # Объединяем все аргументы в одну строку
+        args_text = " ".join(context.args)
+        
+        # Простой парсинг - находим части в кавычках
+        parts = []
+        current = ""
+        in_quotes = False
+        
+        for char in args_text:
+            if char == '"':
+                if in_quotes:
+                    # Закрывающая кавычка
+                    parts.append(current)
+                    current = ""
+                in_quotes = not in_quotes
+            elif char == ' ' and not in_quotes:
+                if current:
+                    parts.append(current)
+                    current = ""
+            else:
+                current += char
+        
+        if current:
+            parts.append(current)
+        
+        # Проверяем минимальное количество аргументов
+        if len(parts) < 4:
+            await update.message.reply_text(
+                "❌ Недостаточно аргументов!\n"
+                "Нужно: название, автор, страницы, жанр\n\n"
+                "Пример: /addbook \"Название\" \"Автор\" 300 \"Жанр\""
+            )
+            return
+        
+        # Извлекаем аргументы
+        title = parts[0]
+        author = parts[1]
+        
+        try:
+            pages = int(parts[2])
+        except ValueError:
+            await update.message.reply_text("❌ Количество страниц должно быть числом!")
+            return
+        
+        genre = parts[3]
         
         # Описание (необязательное)
-        description = " ".join(args[4:]) if len(args) > 4 else ""
+        description = " ".join(parts[4:]) if len(parts) > 4 else ""
         
-        # ИСПРАВЛЕННЫЙ КОД - используем db напрямую
+        # Проверяем, что название и автор не пустые
+        if not title or not author:
+            await update.message.reply_text("❌ Название и автор не могут быть пустыми!")
+            return
+        
+        # Добавляем в базу данных
         conn = sqlite3.connect('books.db')
-        conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
         
+        # Проверяем, нет ли уже такой книги
+        cursor.execute('SELECT id FROM books WHERE title = ? AND author = ?', (title, author))
+        existing = cursor.fetchone()
+        
+        if existing:
+            await update.message.reply_text(
+                f"❌ Книга '{title}' ({author}) уже есть в каталоге!\n"
+                f"Её ID: {existing[0]}"
+            )
+            conn.close()
+            return
+        
+        # Добавляем новую книгу
         cursor.execute('''
             INSERT INTO books (title, author, total_pages, genre, description)
             VALUES (?, ?, ?, ?, ?)
@@ -234,20 +293,18 @@ async def addbook_command(update: Update, context):
         await update.message.reply_text(
             f"""✅ Книга добавлена в общий каталог!
 
-📖 ID: {book_id}
-📚 Название: {title}
-👤 Автор: {author}
-📄 Страниц: {pages}
-📂 Жанр: {genre}
+📖 **ID:** {book_id}
+📚 **Название:** {title}
+👤 **Автор:** {author}
+📄 **Страниц:** {pages}
+📂 **Жанр:** {genre}
 """
         )
         
         print(f"✅ Добавлена новая книга: {title} - {author}")
         
-    except ValueError:
-        await update.message.reply_text("❌ Количество страниц должно быть числом!")
     except Exception as e:
-        await update.message.reply_text(f"❌ Ошибка: {e}")
+        await update.message.reply_text(f"❌ Ошибка при добавлении книги: {str(e)}")
         print(f"❌ Ошибка в /addbook: {e}")
 
 
@@ -968,12 +1025,12 @@ def main():
     
     app = Application.builder().token(TOKEN).build()
     
-    # Команды (ДОБАВЛЕНА НОВАЯ КОМАНДА addbook)
+    # Команды
     app.add_handler(CommandHandler("start", start_command))
     app.add_handler(CommandHandler("help", help_command))
     app.add_handler(CommandHandler("progress", progress_command))
     app.add_handler(CommandHandler("add", add_command))
-    app.add_handler(CommandHandler("addbook", addbook_command))  # НОВАЯ КОМАНДА
+    app.add_handler(CommandHandler("addbook", addbook_command))  # ИСПРАВЛЕННАЯ КОМАНДА
     app.add_handler(CommandHandler("search", search_command))
     app.add_handler(CommandHandler("stats", stats_command))
     app.add_handler(CommandHandler("top", top_command))
