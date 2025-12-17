@@ -38,11 +38,12 @@ class BookDatabase:
             
             if book_count == 0:
                 self._add_sample_books(conn)
+                print("[INFO] Добавлены тестовые книги в базу данных")
             
             conn.commit()
             conn.close()
         except Exception as e:
-            logger.error(f"Ошибка инициализации БД: {e}")
+            print(f"[ERROR] Ошибка инициализации БД: {e}")
     
     def _add_sample_books(self, conn):
         """Добавляет тестовые книги"""
@@ -94,7 +95,7 @@ class BookDatabase:
                 
                 return results
         except Exception as e:
-            logger.error(f"Ошибка поиска: {e}")
+            print(f"[ERROR] Ошибка поиска: {e}")
             return []
     
     def get_book(self, book_id):
@@ -117,7 +118,8 @@ class BookDatabase:
                     }
                 return None
         except Exception as e:
-            logger.error(f"Ошибка получения книги: {e}")
+            print(f"[ERROR] Ошибка получения книги: {e}")
             return None
 
+# Создаем глобальный экземпляр базы данных
 db = BookDatabase()
