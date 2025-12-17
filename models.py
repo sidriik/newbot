@@ -2,7 +2,7 @@ from database import Database, DatabaseError
 
 class Book:
 
-    def init(self, data):
+    def __init__(self, data):
         self.id = data.get('id')
         self.title = data.get('title', 'Без названия')
         self.author = data.get('author', 'Неизвестный автор')
@@ -27,7 +27,7 @@ class Book:
 
 class UserBook:
 
-    def init(self, data):
+    def __init__(self, data):
         self.id = data.get('id')
         self.user_id = data.get('user_id')
         self.book_id = data.get('book_id')
@@ -62,7 +62,7 @@ class UserBook:
 
 class BookManager:
 
-    def init(self, database):
+    def __init__(self, database):
         self.db = database
 
     def get_book(self, book_id):
@@ -108,7 +108,7 @@ class BookManager:
 
 class UserManager:
 
-    def init(self, database):
+    def __init__(self, database):
         self.db = database
 
     def get_or_create_user(self, telegram_id):
