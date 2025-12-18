@@ -1,3 +1,4 @@
+from database import Database
 class Book:
     """
     Класс для представления книги в библиотеке.
