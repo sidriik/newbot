@@ -1,4 +1,4 @@
-from project1 import Database
+from database import Database
 
 class Book:
     """
