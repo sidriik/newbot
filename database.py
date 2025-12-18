@@ -7,6 +7,7 @@ import sqlite3
 
 
 class DatabaseError(Exception):
+    """Исключение для ошибок базы данных."""
     pass
 
 
@@ -14,20 +15,44 @@ class Database:
     """
     Основной класс для работы с базой данных книг.
     
-    Args:
-        db_path (str): Путь к файлу базы данных.
+    :ivar db_path: Путь к файлу базы данных
+    :type db_path: str
     """
     
     def __init__(self, db_path="books.db"):
+        """
+        Конструктор класса.
+        
+        :param db_path: Путь к файлу базы данных
+        :type db_path: str
+        """
         self.db_path = db_path
         self.init_db()
     
     def get_connection(self):
+        """
+        Создает и возвращает соединение с базой данных.
+        
+        :returns: Соединение с базой данных
+        :rtype: sqlite3.Connection
+        """
         conn = sqlite3.connect(self.db_path)
         conn.row_factory = sqlite3.Row
         return conn
     
     def init_db(self):
+        """
+        Инициализирует базу данных и создает таблицы при необходимости.
+        
+        Создает три таблицы:
+        1. books - информация о книгах
+        2. users - информация о пользователях
+        3. user_books - связь пользователей с книгами
+        
+        Если таблица books пуста, добавляет тестовые данные.
+        
+        :raises sqlite3.Error: При ошибках создания таблиц
+        """
         conn = self.get_connection()
         cur = conn.cursor()
         
@@ -74,7 +99,12 @@ class Database:
         conn.close()
     
     def _add_test_books(self, cursor):
-        """Добавляет тестовые книги в базу данных."""
+        """
+        Добавляет тестовые книги в базу данных.
+        
+        :param cursor: Курсор для выполнения SQL-запросов
+        :type cursor: sqlite3.Cursor
+        """
         books = [
             ("Мастер и Маргарита", "Михаил Булгаков", 480, "Классика", "Философский роман"),
             ("Преступление и наказание", "Федор Достоевский", 671, "Классика", "Психологический роман"),
@@ -93,11 +123,10 @@ class Database:
         """
         Получает информацию о книге по её ID.
         
-        Args:
-            book_id (int): ID книги
-            
-        Returns:
-            dict: Словарь с информацией о книге или None, если книга не найдена
+        :param book_id: ID книги
+        :type book_id: int
+        :returns: Словарь с информацией о книге или None
+        :rtype: dict or None
         """
         conn = self.get_connection()
         cur = conn.cursor()
@@ -112,13 +141,14 @@ class Database:
         """
         Ищет книги по заданным критериям.
         
-        Args:
-            query (str): Текст для поиска в названии и авторе
-            genre (str): Жанр для фильтрации
-            limit (int): Максимальное количество результатов
-            
-        Returns:
-            list: Список словарей с книгами
+        :param query: Текст для поиска в названии и авторе
+        :type query: str
+        :param genre: Жанр для фильтрации
+        :type genre: str
+        :param limit: Максимальное количество результатов
+        :type limit: int
+        :returns: Список словарей с книгами
+        :rtype: list
         """
         conn = self.get_connection()
         cur = conn.cursor()
@@ -148,11 +178,10 @@ class Database:
         """
         Получает статистику по книге.
         
-        Args:
-            book_id (int): ID книги
-            
-        Returns:
-            dict: Статистика по книге
+        :param book_id: ID книги
+        :type book_id: int
+        :returns: Статистика по книге
+        :rtype: dict
         """
         conn = self.get_connection()
         cur = conn.cursor()
@@ -191,14 +220,16 @@ class Database:
         """
         Получает топ книг по заданным критериям.
         
-        Args:
-            criteria (str): Критерий сортировки ('rating' или другое)
-            genre (str): Фильтр по жанру
-            author (str): Фильтр по автору
-            limit (int): Максимальное количество
-            
-        Returns:
-            list: Список топ книг
+        :param criteria: Критерий сортировки ('rating' или другое)
+        :type criteria: str
+        :param genre: Фильтр по жанру
+        :type genre: str
+        :param author: Фильтр по автору
+        :type author: str
+        :param limit: Максимальное количество
+        :type limit: int
+        :returns: Список топ книг
+        :rtype: list
         """
         conn = self.get_connection()
         cur = conn.cursor()
@@ -250,14 +281,16 @@ class Database:
         """
         Получает или создает пользователя по Telegram ID.
         
-        Args:
-            telegram_id (int): ID пользователя в Telegram
-            username (str): Имя пользователя
-            first_name (str): Имя
-            last_name (str): Фамилия
-            
-        Returns:
-            int: ID пользователя в базе данных
+        :param telegram_id: ID пользователя в Telegram
+        :type telegram_id: int
+        :param username: Имя пользователя
+        :type username: str
+        :param first_name: Имя
+        :type first_name: str
+        :param last_name: Фамилия
+        :type last_name: str
+        :returns: ID пользователя в базе данных
+        :rtype: int
         """
         conn = self.get_connection()
         cur = conn.cursor()
@@ -285,13 +318,14 @@ class Database:
         """
         Добавляет книгу в коллекцию пользователя.
         
-        Args:
-            user_id (int): ID пользователя
-            book_id (int): ID книги
-            status (str): Статус книги
-            
-        Returns:
-            bool: True если книга добавлена, False если уже существует
+        :param user_id: ID пользователя
+        :type user_id: int
+        :param book_id: ID книги
+        :type book_id: int
+        :param status: Статус книги
+        :type status: str
+        :returns: True если книга добавлена, False если уже существует
+        :rtype: bool
         """
         conn = self.get_connection()
         cur = conn.cursor()
@@ -316,12 +350,12 @@ class Database:
         """
         Удаляет книгу из коллекции пользователя.
         
-        Args:
-            user_id (int): ID пользователя
-            book_id (int): ID книги
-            
-        Returns:
-            bool: True если книга удалена, False если не найдена
+        :param user_id: ID пользователя
+        :type user_id: int
+        :param book_id: ID книги
+        :type book_id: int
+        :returns: True если книга удалена, False если не найдена
+        :rtype: bool
         """
         conn = self.get_connection()
         cur = conn.cursor()
@@ -339,14 +373,16 @@ class Database:
         """
         Обновляет статус книги у пользователя.
         
-        Args:
-            user_id (int): ID пользователя
-            book_id (int): ID книги
-            status (str): Новый статус
-            current_page (int): Текущая страница
-            
-        Returns:
-            bool: True если обновлено, False если не найдено
+        :param user_id: ID пользователя
+        :type user_id: int
+        :param book_id: ID книги
+        :type book_id: int
+        :param status: Новый статус
+        :type status: str
+        :param current_page: Текущая страница
+        :type current_page: int
+        :returns: True если обновлено, False если не найдено
+        :rtype: bool
         """
         conn = self.get_connection()
         cur = conn.cursor()
@@ -367,13 +403,14 @@ class Database:
         """
         Оценивает книгу пользователем.
         
-        Args:
-            user_id (int): ID пользователя
-            book_id (int): ID книги
-            rating (int): Оценка от 1 до 5
-            
-        Returns:
-            bool: True если оценка сохранена, False если неверная оценка или запись не найдена
+        :param user_id: ID пользователя
+        :type user_id: int
+        :param book_id: ID книги
+        :type book_id: int
+        :param rating: Оценка от 1 до 5
+        :type rating: int
+        :returns: True если оценка сохранена, False если неверная оценка или запись не найдена
+        :rtype: bool
         """
         if rating < 1 or rating > 5:
             return False
@@ -397,12 +434,12 @@ class Database:
         """
         Получает книги пользователя.
         
-        Args:
-            user_id (int): ID пользователя
-            status (str, optional): Фильтр по статусу
-            
-        Returns:
-            list: Список книг пользователя
+        :param user_id: ID пользователя
+        :type user_id: int
+        :param status: Фильтр по статусу
+        :type status: str
+        :returns: Список книг пользователя
+        :rtype: list
         """
         conn = self.get_connection()
         cur = conn.cursor()
@@ -431,11 +468,10 @@ class Database:
         """
         Получает статистику пользователя.
         
-        Args:
-            user_id (int): ID пользователя
-            
-        Returns:
-            dict: Статистика пользователя
+        :param user_id: ID пользователя
+        :type user_id: int
+        :returns: Статистика пользователя
+        :rtype: dict
         """
         conn = self.get_connection()
         cur = conn.cursor()
@@ -481,8 +517,8 @@ class Database:
         """
         Получает все уникальные жанры из базы данных.
         
-        Returns:
-            list: Список жанров
+        :returns: Список жанров
+        :rtype: list
         """
         conn = self.get_connection()
         cur = conn.cursor()
@@ -494,27 +530,29 @@ class Database:
         genres = [row['genre'] for row in rows]
         
         return genres if genres else ["Классика", "Фэнтези", "Роман", "Детектив", "Антиутопия"]
+    
     def add_book_to_catalog(self, title, author, pages, genre, description=""):
         """
         Добавляет новую книгу в каталог.
         
-        Args:
-            title (str): Название книги
-            author (str): Автор книги
-            pages (int): Количество страниц
-            genre (str): Жанр книги
-            description (str, optional): Описание книги
-            
-        Returns:
-            tuple: (success, book_id, message)
-                - success (bool): True если успешно, False если ошибка
-                - book_id (int): ID книги или None
-                - message (str): Сообщение для пользователя
-                
-        Что делает:
-            1. Проверяет, нет ли уже такой книги
-            2. Если нет - добавляет
-            3. Возвращает результат
+        Проверяет, нет ли уже такой книги. Если нет - добавляет.
+        
+        :param title: Название книги
+        :type title: str
+        :param author: Автор книги
+        :type author: str
+        :param pages: Количество страниц
+        :type pages: int
+        :param genre: Жанр книги
+        :type genre: str
+        :param description: Описание книги
+        :type description: str
+        :returns: Кортеж (success, book_id, message)
+            - success (bool): True если успешно, False если ошибка
+            - book_id (int): ID книги или None
+            - message (str): Сообщение для пользователя
+        :rtype: tuple
+        :raises sqlite3.IntegrityError: При нарушении целостности данных
         """
         conn = self.get_connection()
         cur = conn.cursor()
@@ -551,4 +589,4 @@ class Database:
         except Exception as e:
             conn.rollback()
             conn.close()
-            return False, None, f"Неизвестная ошибка: {str(e)}"       
+            return False, None, f"Неизвестная ошибка: {str(e)}"
