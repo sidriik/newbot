@@ -6,32 +6,31 @@
 import sqlite3
 
 
-# Ошибка базы данных
 class DatabaseError(Exception):
     pass
 
 
-# Главный класс для работы с базой
 class Database:
+    """
+    Основной класс для работы с базой данных книг.
+    
+    Args:
+        db_path (str): Путь к файлу базы данных.
+    """
     
     def __init__(self, db_path="books.db"):
-        # Путь к файлу базы
         self.db_path = db_path
-        # Создаем базу
         self.init_db()
     
-    # Подключиться к базе
     def get_connection(self):
         conn = sqlite3.connect(self.db_path)
-        conn.row_factory = sqlite3.Row  # Чтобы результаты были как словари
+        conn.row_factory = sqlite3.Row
         return conn
     
-    # Создать базу и таблицы
     def init_db(self):
         conn = self.get_connection()
         cur = conn.cursor()
         
-        # Таблица с книгами
         cur.execute('''
             CREATE TABLE IF NOT EXISTS books (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -43,7 +42,6 @@ class Database:
             )
         ''')
         
-        # Таблица с пользователями
         cur.execute('''
             CREATE TABLE IF NOT EXISTS users (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -54,7 +52,6 @@ class Database:
             )
         ''')
         
-        # Таблица связей (какие книги у каких пользователей)
         cur.execute('''
             CREATE TABLE IF NOT EXISTS user_books (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -69,42 +66,39 @@ class Database:
             )
         ''')
         
-        # Проверим, есть ли уже книги
         cur.execute("SELECT COUNT(*) FROM books")
-        count = cur.fetchone()[0]
-        
-        # Если книг нет, добавим тестовые
-        if count == 0:
-            self.add_test_books(cur)
+        if cur.fetchone()[0] == 0:
+            self._add_test_books(cur)
         
         conn.commit()
         conn.close()
     
-    # Добавить тестовые книги
-    def add_test_books(self, cur):
-        # Список книг для добавления
+    def _add_test_books(self, cursor):
+        """Добавляет тестовые книги в базу данных."""
         books = [
             ("Мастер и Маргарита", "Михаил Булгаков", 480, "Классика", "Философский роман"),
             ("Преступление и наказание", "Федор Достоевский", 671, "Классика", "Психологический роман"),
             ("1984", "Джордж Оруэлл", 328, "Антиутопия", "Роман о тоталитарном обществе"),
             ("Гарри Поттер и философский камень", "Джоан Роулинг", 320, "Фэнтези", "О юном волшебнике"),
             ("Маленький принц", "Антуан де Сент-Экзюпери", 96, "Сказка", "Философская сказка"),
-            ("Война и мир", "Лев Толстой", 1225, "Классика", "Эпопея"),
-            ("Три товарища", "Эрих Мария Ремарк", 480, "Роман", "О дружбе и любви"),
-            ("Алхимик", "Пауло Коэльо", 208, "Роман", "Притча"),
-            ("Шерлок Холмс", "Артур Конан Дойл", 307, "Детектив", "Рассказы о сыщике"),
-            ("Гордость и предубеждение", "Джейн Остин", 432, "Роман", "Классика"),
         ]
         
-        # Добавляем каждую книгу
         for book in books:
-            cur.execute('''
+            cursor.execute('''
                 INSERT INTO books (title, author, total_pages, genre, description)
                 VALUES (?, ?, ?, ?, ?)
             ''', book)
     
-    # Получить книгу по ID
     def get_book(self, book_id):
+        """
+        Получает информацию о книге по её ID.
+        
+        Args:
+            book_id (int): ID книги
+            
+        Returns:
+            dict: Словарь с информацией о книге или None, если книга не найдена
+        """
         conn = self.get_connection()
         cur = conn.cursor()
         
@@ -112,50 +106,54 @@ class Database:
         row = cur.fetchone()
         
         conn.close()
-        
-        if row:
-            return dict(row)  # Превращаем в словарь
-        return None
+        return dict(row) if row else None
     
-    # Поиск книг
     def search_books(self, query="", genre="", limit=10):
+        """
+        Ищет книги по заданным критериям.
+        
+        Args:
+            query (str): Текст для поиска в названии и авторе
+            genre (str): Жанр для фильтрации
+            limit (int): Максимальное количество результатов
+            
+        Returns:
+            list: Список словарей с книгами
+        """
         conn = self.get_connection()
         cur = conn.cursor()
         
-        # Начинаем запрос
         sql = "SELECT * FROM books WHERE 1=1"
         params = []
         
-        # Если есть текст для поиска
         if query:
             sql += " AND (title LIKE ? OR author LIKE ?)"
             search = f"%{query}%"
-            params.append(search)
-            params.append(search)
+            params.extend([search, search])
         
-        # Если выбран жанр
         if genre:
             sql += " AND genre = ?"
             params.append(genre)
         
-        # Сортировка и лимит
         sql += " ORDER BY title LIMIT ?"
         params.append(limit)
         
-        # Выполняем запрос
         cur.execute(sql, params)
         rows = cur.fetchall()
-        
         conn.close()
         
-        # Превращаем все в словари
-        result = []
-        for row in rows:
-            result.append(dict(row))
-        return result
+        return [dict(row) for row in rows]
     
-    # Статистика по книге
     def get_book_stats(self, book_id):
+        """
+        Получает статистику по книге.
+        
+        Args:
+            book_id (int): ID книги
+            
+        Returns:
+            dict: Статистика по книге
+        """
         conn = self.get_connection()
         cur = conn.cursor()
         
@@ -182,7 +180,6 @@ class Database:
                 'rating_count': row['rating_count'] or 0
             }
         
-        # Если нет статистики
         return {
             'total_added': 0,
             'currently_reading': 0,
@@ -190,12 +187,22 @@ class Database:
             'rating_count': 0
         }
     
-    # Топ книг
     def get_top_books(self, criteria="rating", genre="", author="", limit=5):
+        """
+        Получает топ книг по заданным критериям.
+        
+        Args:
+            criteria (str): Критерий сортировки ('rating' или другое)
+            genre (str): Фильтр по жанру
+            author (str): Фильтр по автору
+            limit (int): Максимальное количество
+            
+        Returns:
+            list: Список топ книг
+        """
         conn = self.get_connection()
         cur = conn.cursor()
         
-        # Выбираем как сортировать
         if criteria == 'rating':
             sql = '''
                 SELECT b.*, 
@@ -217,23 +224,19 @@ class Database:
         
         params = []
         
-        # Фильтр по жанру
         if genre:
             sql += " AND b.genre = ?"
             params.append(genre)
         
-        # Фильтр по автору
         if author:
             sql += " AND b.author LIKE ?"
             params.append(f"%{author}%")
         
-        # Сортировка
         if criteria == 'rating':
             sql += " GROUP BY b.id ORDER BY calc_rating DESC, total_added DESC"
         else:
             sql += " GROUP BY b.id ORDER BY total_added DESC, reading_now DESC"
         
-        # Лимит
         sql += " LIMIT ?"
         params.append(limit)
         
@@ -241,28 +244,32 @@ class Database:
         rows = cur.fetchall()
         conn.close()
         
-        # Возвращаем список словарей
-        result = []
-        for row in rows:
-            result.append(dict(row))
-        return result
+        return [dict(row) for row in rows]
     
-    # Получить или создать пользователя
     def get_or_create_user(self, telegram_id, username="", first_name="", last_name=""):
+        """
+        Получает или создает пользователя по Telegram ID.
+        
+        Args:
+            telegram_id (int): ID пользователя в Telegram
+            username (str): Имя пользователя
+            first_name (str): Имя
+            last_name (str): Фамилия
+            
+        Returns:
+            int: ID пользователя в базе данных
+        """
         conn = self.get_connection()
         cur = conn.cursor()
         
-        # Ищем пользователя
         cur.execute("SELECT id FROM users WHERE telegram_id = ?", (telegram_id,))
         row = cur.fetchone()
         
-        # Если нашли
         if row:
             user_id = row['id']
             conn.close()
             return user_id
         
-        # Если не нашли - создаем
         cur.execute('''
             INSERT INTO users (telegram_id, username, first_name, last_name)
             VALUES (?, ?, ?, ?)
@@ -274,18 +281,28 @@ class Database:
         
         return user_id
     
-    # Добавить книгу пользователю
     def add_user_book(self, user_id, book_id, status="planned"):
+        """
+        Добавляет книгу в коллекцию пользователя.
+        
+        Args:
+            user_id (int): ID пользователя
+            book_id (int): ID книги
+            status (str): Статус книги
+            
+        Returns:
+            bool: True если книга добавлена, False если уже существует
+        """
         conn = self.get_connection()
         cur = conn.cursor()
         
-        # Проверим, есть ли уже такая книга
-        cur.execute("SELECT id FROM user_books WHERE user_id = ? AND book_id = ?", (user_id, book_id))
+        cur.execute("SELECT id FROM user_books WHERE user_id = ? AND book_id = ?", 
+                   (user_id, book_id))
+        
         if cur.fetchone():
             conn.close()
-            return False  # Уже есть
+            return False
         
-        # Добавляем
         cur.execute('''
             INSERT INTO user_books (user_id, book_id, status)
             VALUES (?, ?, ?)
@@ -295,20 +312,42 @@ class Database:
         conn.close()
         return True
     
-    # Удалить книгу у пользователя
     def remove_user_book(self, user_id, book_id):
+        """
+        Удаляет книгу из коллекции пользователя.
+        
+        Args:
+            user_id (int): ID пользователя
+            book_id (int): ID книги
+            
+        Returns:
+            bool: True если книга удалена, False если не найдена
+        """
         conn = self.get_connection()
         cur = conn.cursor()
         
-        cur.execute("DELETE FROM user_books WHERE user_id = ? AND book_id = ?", (user_id, book_id))
-        deleted = cur.rowcount > 0
+        cur.execute("DELETE FROM user_books WHERE user_id = ? AND book_id = ?", 
+                   (user_id, book_id))
         
+        deleted = cur.rowcount > 0
         conn.commit()
         conn.close()
+        
         return deleted
     
-    # Обновить статус книги
     def update_book_status(self, user_id, book_id, status, current_page=0):
+        """
+        Обновляет статус книги у пользователя.
+        
+        Args:
+            user_id (int): ID пользователя
+            book_id (int): ID книги
+            status (str): Новый статус
+            current_page (int): Текущая страница
+            
+        Returns:
+            bool: True если обновлено, False если не найдено
+        """
         conn = self.get_connection()
         cur = conn.cursor()
         
@@ -319,14 +358,23 @@ class Database:
         ''', (status, current_page, user_id, book_id))
         
         updated = cur.rowcount > 0
-        
         conn.commit()
         conn.close()
+        
         return updated
     
-    # Оценить книгу
     def rate_book(self, user_id, book_id, rating):
-        # Проверка оценки
+        """
+        Оценивает книгу пользователем.
+        
+        Args:
+            user_id (int): ID пользователя
+            book_id (int): ID книги
+            rating (int): Оценка от 1 до 5
+            
+        Returns:
+            bool: True если оценка сохранена, False если неверная оценка или запись не найдена
+        """
         if rating < 1 or rating > 5:
             return False
         
@@ -340,13 +388,22 @@ class Database:
         ''', (rating, user_id, book_id))
         
         updated = cur.rowcount > 0
-        
         conn.commit()
         conn.close()
+        
         return updated
     
-    # Получить книги пользователя
     def get_user_books(self, user_id, status=None):
+        """
+        Получает книги пользователя.
+        
+        Args:
+            user_id (int): ID пользователя
+            status (str, optional): Фильтр по статусу
+            
+        Returns:
+            list: Список книг пользователя
+        """
         conn = self.get_connection()
         cur = conn.cursor()
         
@@ -358,25 +415,28 @@ class Database:
         '''
         params = [user_id]
         
-        # Фильтр по статусу
         if status:
             sql += " AND ub.status = ?"
             params.append(status)
         
-        sql += " ORDER BY ub.added_at DESC"
+        sql += " ORDER BY ub.id DESC"
         
         cur.execute(sql, params)
         rows = cur.fetchall()
         conn.close()
         
-        # В список словарей
-        result = []
-        for row in rows:
-            result.append(dict(row))
-        return result
+        return [dict(row) for row in rows]
     
-    # Статистика пользователя
     def get_user_stats(self, user_id):
+        """
+        Получает статистику пользователя.
+        
+        Args:
+            user_id (int): ID пользователя
+            
+        Returns:
+            dict: Статистика пользователя
+        """
         conn = self.get_connection()
         cur = conn.cursor()
         
@@ -407,7 +467,6 @@ class Database:
                 'total_pages_read': row['pages_read'] or 0
             }
         
-        # Если нет книг
         return {
             'total': 0,
             'planned': 0,
@@ -418,23 +477,20 @@ class Database:
             'total_pages_read': 0
         }
     
-    # Все жанры
     def get_all_genres(self):
+        """
+        Получает все уникальные жанры из базы данных.
+        
+        Returns:
+            list: Список жанров
+        """
         conn = self.get_connection()
         cur = conn.cursor()
         
         cur.execute("SELECT DISTINCT genre FROM books WHERE genre IS NOT NULL ORDER BY genre")
         rows = cur.fetchall()
-        
         conn.close()
         
-        # Извлекаем жанры
-        genres = []
-        for row in rows:
-            genres.append(row['genre'])
+        genres = [row['genre'] for row in rows]
         
-        # Если нет жанров - возвращаем тестовые
-        if not genres:
-            return ["Классика", "Фэнтези", "Роман", "Детектив", "Антиутопия"]
-        
-        return genres
+        return genres if genres else ["Классика", "Фэнтези", "Роман", "Детектив", "Антиутопия"]
