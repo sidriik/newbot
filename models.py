@@ -3,12 +3,12 @@ class Book:
     Класс для представления книги в библиотеке.
 
     Attributes:
-        id: Уникальный идентификатор книги
-        title: Название книги
-        author: Автор книги
-        total_pages: Общее количество страниц
-        genre: Жанр книги
-        description: Описание книги
+        id (int): Уникальный идентификатор книги
+        title (str): Название книги
+        author (str): Автор книги
+        total_pages (int): Общее количество страниц
+        genre (str): Жанр книги
+        description (str): Описание книги
     """
 
     def __init__(self, data):
@@ -60,17 +60,17 @@ class UserBook:
     """
     Класс для представления книги пользователя с прогрессом чтения.
 
-    Attributes:
-        id: Уникальный идентификатор записи
-        user_id: Идентификатор пользователя
-        book_id: Идентификатор книги
-        status: Статус чтения ('planned', 'reading', 'completed', 'dropped')
-        current_page: Текущая страница чтения
-        rating: Оценка пользователя (1-5)
-        title: Название книги
-        author: Автор книги
-        total_pages: Общее количество страниц
-        genre: Жанр книги
+     Attributes:
+        id (int): Уникальный идентификатор записи
+        user_id (int): Идентификатор пользователя
+        book_id (int): Идентификатор книги
+        status (str): Статус чтения ('planned', 'reading', 'completed', 'dropped')
+        current_page (int): Текущая страница чтения
+        rating (Optional[int]): Оценка пользователя (1-5) или None
+        title (str): Название книги
+        author (str): Автор книги
+        total_pages (int): Общее количество страниц
+        genre (str): Жанр книги
     """
 
     def __init__(self, data):
@@ -482,9 +482,13 @@ class UserManager:
             ValueError: Если оценка выходит за допустимый диапазон (1-5)
         """
         try:
-            if rating < 1 or rating>5:
+            if rating < 1 or rating > 5:
                 raise ValueError
             return self.db.rate_book(user_id, book_id, rating)
         except Exception as e:
             print(f"Ошибка оценки: {e}")
             return False
+
+
+if __name__ == "__main__":
+    print("✅ Библиотечный бот инициализирован")

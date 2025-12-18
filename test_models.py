@@ -1,123 +1,103 @@
 import pytest
-from models import Book, UserBook, BookManager, UserManager
+from unittest.mock import Mock
+from new_bot import Book, UserBook, BookManager, UserManager
+
+def test_book1():
+    b = Book({'title': 'Гарри Поттер', 'author': 'Роулинг', 'genre': 'Фэнтези'})
+    assert b.title == 'Гарри Поттер'
+    assert b.author == 'Роулинг'
+    assert b.genre == 'Фэнтези'
 
 
-def test_book_simple():
-    """Simple test for Book class"""
-    book_data = {"id": 1, "title": "Harry Potter", "author": "J.K. Rowling"}
-
-    book = Book(book_data)
-
-    assert book.id == 1
-    assert book.title == "Harry Potter"
-    assert book.author == "J.K. Rowling"
-    assert book.get_short() == "Harry Potter"
+def test_book2():
+    b = Book({})
+    assert b.title == 'Без названия'
+    assert b.author == 'Неизвестный автор'
+    assert b.genre == 'Не указан'
 
 
-def test_book_get_info():
-    """Test book info method"""
-    book_data = {
-        "id": 2,
-        "title": "War and Peace",
-        "author": "Leo Tolstoy",
-        "genre": "Classic",
-        "total_pages": 1000,
-        "description": "A Russian novel",
-    }
-
-    book = Book(book_data)
-    info = book.get_info()
-
-    assert "📖 War and Peace" in info
-    assert "👤 Автор: Leo Tolstoy" in info
-    assert "📂 Жанр: Classic" in info
-    assert "📄 Страниц: 1000" in info
+def test_progress1():
+    ub = UserBook({'current_page': 50, 'total_pages': 100})
+    assert ub.get_progress() == 50.0
 
 
-def test_userbook_progress():
-    """Test UserBook progress calculation"""
-    data = {"id": 1, "current_page": 50, "total_pages": 200, "status": "reading"}
-
-    user_book = UserBook(data)
-
-    assert user_book.get_progress() == 25.0
+def test_progress2():
+    ub = UserBook({'current_page': 10, 'total_pages': 0})
+    assert ub.get_progress() == 0.0
 
 
-def test_bookmanager():
-    class MockDB:
-        def get_book(self, book_id):
-            return {"id": book_id, "title": f"Book {book_id}", "author": "Author"}
-
-        def search_books(self, query="", genre="", limit=10):
-            return [{"id": 1, "title": "Found Book", "author": "Author"}]
-
-        def get_top_books(self, criteria="rating", genre="", author="", limit=5):
-            return [{"id": 1, "title": "Top Book", "author": "Popular Author"}]
-
-        def get_all_genres(self):
-            return ["Fantasy", "Classic", "Detective"]
-
-    db = MockDB()
-    manager = BookManager(db)
-    book = manager.get_book(1)
-    assert book.title == "Book 1"
-    results = manager.search_books("search")
-    assert len(results) == 1
-    assert results[0].title == "Found Book"
-    genres = manager.get_all_genres()
-    assert len(genres) == 3
-    assert "Fantasy" in genres
+def test_is_completed1():
+    ub = UserBook({'status': 'completed'})
+    assert ub.is_completed() == True
 
 
-def test_book_not_found():
-    """Negative test: book not found"""
-
-    class MockDB:
-        def get_book(self, book_id):
-            return None
-
-    db = MockDB()
-    manager = BookManager(db)
-    book = manager.get_book(999)
-    assert book is None
+def test_is_completed2():
+    ub = UserBook({'status': 'reading'})
+    assert ub.is_completed() == False
 
 
-def test_invalid_book_data():
-    book = Book({})
-    assert book.title == "Без названия"
-    assert book.author == "Неизвестный автор"
-    assert book.genre == "Не указан"
-    assert book.total_pages == 0
+def test_get_all_genres1():
+    db = Mock()
+    db.get_all_genres.return_value = ["Фэнтези", "Детектив", "Классика"]
+    m = BookManager(db)
+    assert m.get_all_genres() == ["Фэнтези", "Детектив", "Классика"]
 
 
-def test_usermanager():
-    class MockDB:
-        def get_or_create_user(
-            self, telegram_id, username="", first_name="", last_name=""
-        ):
-            return 123
-
-    db = MockDB()
-    manager = UserManager(db)
-    user_id = manager.get_or_create_user(telegram_id=55555, username="test_user")
-    assert user_id == 123
+def test_get_all_genres2():
+    db = Mock()
+    db.get_all_genres.return_value = []
+    m = BookManager(db)
+    assert m.get_all_genres() == []
 
 
-def test_userbook_zero_pages():
-    data = {"id": 1, "current_page": 10, "total_pages": 0}
+def test_get_book():
+    db = Mock()
+    db.get_book.return_value = {'title': 'Книга'}
+    m = BookManager(db)
+    assert m.get_book(1).title == 'Книга'
 
-    user_book = UserBook(data)
-    progress = user_book.get_progress()
-    assert progress == 0
+
+def test_search_books():
+    db = Mock()
+    db.search_books.return_value = [{'title': 'Книга 1'}, {'title': 'Книга 2'}]
+    m = BookManager(db)
+    assert len(m.search_books()) == 2
 
 
-def test_bookmanager_empty_search():
-    class MockDB:
-        def search_books(self, query="", genre="", limit=10):
-            return []
+def test_rate_book1():
+    db = Mock()
+    db.rate_book.return_value = True
+    m = UserManager(db)
+    assert m.rate_book(1, 1, 5) == True
 
-    db = MockDB()
-    manager = BookManager(db)
-    results = manager.search_books("nonexistentquery")
-    assert results == []
-    assert len(results) == 0
+
+def test_rate_book2():
+    db = Mock()
+    m = UserManager(db)
+    assert m.rate_book(1, 1, 0) == False
+
+
+def test_count_user_books1():
+    m = UserManager(None)
+    m.get_user_books = lambda user_id: [Mock(), Mock(), Mock()]
+    assert m.count_user_books(1) == 3
+
+
+def test_count_user_books2():
+    m = UserManager(None)
+    m.get_user_books = lambda user_id: []
+    assert m.count_user_books(1) == 0
+
+
+def test_add_book():
+    db = Mock()
+    db.add_user_book.return_value = True
+    m = UserManager(db)
+    assert m.add_book(1, 1, "planned") == True
+
+
+def test_update_status():
+    db = Mock()
+    db.update_book_status.return_value = True
+    m = UserManager(db)
+    assert m.update_book_status(1, 1, "reading", 10) == True
