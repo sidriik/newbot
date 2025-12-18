@@ -1,31 +1,13 @@
-"""
-Модуль для работы с базой данных книг.
-Хранит информацию о книгах, пользователях и их коллекциях.
-"""
-
 import sqlite3
 
 
 class DatabaseError(Exception):
-    """Исключение для ошибок базы данных."""
     pass
 
 
 class Database:
-    """
-    Основной класс для работы с базой данных книг.
-    
-    :ivar db_path: Путь к файлу базы данных
-    :type db_path: str
-    """
     
     def __init__(self, db_path="books.db"):
-        """
-        Конструктор класса.
-        
-        :param db_path: Путь к файлу базы данных
-        :type db_path: str
-        """
         self.db_path = db_path
         self.init_db()
     
@@ -41,18 +23,6 @@ class Database:
         return conn
     
     def init_db(self):
-        """
-        Инициализирует базу данных и создает таблицы при необходимости.
-        
-        Создает три таблицы:
-        1. books - информация о книгах
-        2. users - информация о пользователях
-        3. user_books - связь пользователей с книгами
-        
-        Если таблица books пуста, добавляет тестовые данные.
-        
-        :raises sqlite3.Error: При ошибках создания таблиц
-        """
         conn = self.get_connection()
         cur = conn.cursor()
         
@@ -558,7 +528,6 @@ class Database:
         cur = conn.cursor()
         
         try:
-            # Проверяем, есть ли уже такая книга
             cur.execute(
                 'SELECT id FROM books WHERE LOWER(title) = LOWER(?) AND LOWER(author) = LOWER(?)',
                 (title, author)
@@ -566,11 +535,9 @@ class Database:
             existing = cur.fetchone()
             
             if existing:
-                # Книга уже есть в каталоге
                 conn.close()
                 return False, existing['id'], "Книга уже есть в каталоге"
-            
-            # Добавляем новую книгу
+
             cur.execute('''
                 INSERT INTO books (title, author, total_pages, genre, description)
                 VALUES (?, ?, ?, ?, ?)
