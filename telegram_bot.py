@@ -422,7 +422,7 @@ async def button_handler(update: Update, context):
 
     elif data == "mybooks":
         books = user_manager.get_user_books(user_db_id)
-if not books:
+       if not books:
             keyboard = [
                 [InlineKeyboardButton(f"{EMOJI['plus']} Добавить книгу", callback_data="add_book"),
                  InlineKeyboardButton(f"{EMOJI['search']} Найти книгу", callback_data="search")],
