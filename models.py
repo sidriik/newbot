@@ -10,7 +10,6 @@ class Book:
         genre: Жанр книги
         description: Описание книги
     """
-
     def __init__(self, data):
         """
         Инициализирует объект книги.
@@ -27,12 +26,12 @@ class Book:
             ValueError: Если произошла ошибка при создании объекта
         """
         try:
-            self.id = data.get("id")
-            self.title = data.get("title", "Без названия")
-            self.author = data.get("author", "Неизвестный автор")
-            self.total_pages = data.get("total_pages", 0)
-            self.genre = data.get("genre", "Не указан")
-            self.description = data.get("description", "")
+            self.id = data.get('id')
+            self.title = data.get('title', 'Без названия')
+            self.author = data.get('author', 'Неизвестный автор')
+            self.total_pages = data.get('total_pages', 0)
+            self.genre = data.get('genre', 'Не указан')
+            self.description = data.get('description', '')
         except Exception as e:
             raise ValueError(f"Ошибка создания книги: {e}")
 
@@ -97,7 +96,6 @@ class UserBook:
         total_pages: Общее количество страниц
         genre: Жанр книги
     """
-
     def __init__(self, data):
         """
         Инициализирует объект книги пользователя.
@@ -109,16 +107,16 @@ class UserBook:
             ValueError: Если произошла ошибка при создании объекта
         """
         try:
-            self.id = data.get("id")
-            self.user_id = data.get("user_id")
-            self.book_id = data.get("book_id")
-            self.status = data.get("status", "planned")
-            self.current_page = data.get("current_page", 0)
-            self.rating = data.get("rating")
-            self.title = data.get("title", "")
-            self.author = data.get("author", "")
-            self.total_pages = data.get("total_pages", 0)
-            self.genre = data.get("genre", "")
+            self.id = data.get('id')
+            self.user_id = data.get('user_id')
+            self.book_id = data.get('book_id')
+            self.status = data.get('status', 'planned')
+            self.current_page = data.get('current_page', 0)
+            self.rating = data.get('rating')
+            self.title = data.get('title', '')
+            self.author = data.get('author', '')
+            self.total_pages = data.get('total_pages', 0)
+            self.genre = data.get('genre', '')
         except Exception as e:
             raise ValueError(f"Ошибка создания UserBook: {e}")
 
@@ -150,15 +148,15 @@ class UserBook:
         """
         try:
             status_names = {
-                "planned": "📅 Запланировано",
-                "reading": "📖 Читаю сейчас",
-                "completed": "✅ Прочитано",
-                "dropped": "❌ Брошено",
+                'planned': '📅 Запланировано',
+                'reading': '📖 Читаю сейчас',
+                'completed': '✅ Прочитано',
+                'dropped': '❌ Брошено'
             }
             info = f"📖 {self.title}\n"
             info += f"👤 {self.author}\n"
             info += f"📂 Статус: {status_names.get(self.status, self.status)}\n"
-            if self.status == "reading" and self.current_page > 0:
+            if self.status == 'reading' and self.current_page > 0:
                 progress = self.get_progress()
                 info += f"📊 Прогресс: стр. {self.current_page}/{self.total_pages} ({progress:.1f}%)\n"
             if self.rating:
@@ -175,14 +173,13 @@ class UserBook:
         Returns:
             bool: True если статус 'completed', иначе False
         """
-        return self.status == "completed"
+        return self.status == 'completed'
 
 
 class BookManager:
     """
     Менеджер для работы с книгами в библиотеке.
     """
-
     def __init__(self, db):
         """
         Инициализирует менеджер книг.
@@ -263,7 +260,6 @@ class UserManager:
     """
     Менеджер для работы с пользователями и их книгами.
     """
-
     def __init__(self, db):
         """
         Инициализирует менеджер пользователей.
@@ -282,9 +278,7 @@ class UserManager:
     def get_or_create_user(self, telegram_id, username="", first_name="", last_name=""):
 
         try:
-            return self.db.get_or_create_user(
-                telegram_id, username, first_name, last_name
-            )
+            return self.db.get_or_create_user(telegram_id, username, first_name, last_name)
         except Exception as e:
             print(f"Ошибка создания пользователя: {e}")
             return None
@@ -348,7 +342,7 @@ class UserManager:
 
     def update_progress(self, user_id, book_id, current_page):
         try:
-            return self.update_book_status(user_id, book_id, "reading", current_page)
+            return self.update_book_status(user_id, book_id, 'reading', current_page)
         except Exception as e:
             print(f"Ошибка обновления прогресса: {e}")
             return False
