@@ -1053,7 +1053,8 @@ async def do_search(upd, query, genre):
         rating = f" ⭐{stats['avg_rating']:.1f}" if stats['avg_rating'] > 0 else ""
         
         message += f"\n{i}. {book.title}"
-        message += f"\n   👤 {book.author}{rating} (ID: {book.id})"
+        message += f"\n   👤 {book.author}{rating}"
+        message += f"\n   📊 Добавили: {stats['total_added']} чел. | Читают сейчас: {stats['reading_now']} чел. (ID: {book.id})"
         
         short = book.title[:12] + "..." if len(book.title) > 12 else book.title
         keyboard_buttons.append([
