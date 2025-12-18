@@ -111,6 +111,11 @@ async def progress_command(update: Update, context):
             await update.message.reply_text(f"В книге всего {book.total_pages} страниц!")
             return
         
+        ok = user_manager.update_progress(user_db_id, book_id, page)
+        if not ok:
+            await update.message.reply_text("Ошибка обновления.")
+            return
+        
         progress = (page / book.total_pages) * 100
         
         if progress >= 100:
@@ -194,12 +199,13 @@ async def add_command(update: Update, context):
         print(f"Ошибка /add: {e}")
 
 async def addbook_command(update: Update, context):
+    """Добавить новую книгу в общий каталог."""
     if not context.args or len(context.args) < 4:
         await update.message.reply_text(
             f"{EMOJI['cross']} Использование: /addbook <название> <автор> <страницы> <жанр> [описание]\n\n"
             "Пример:\n"
-            f"/addbook Мастер_и_Маргарита Михаил_Булгаков 480 Классика\n"
-            f"/addbook 1984 Джордж_Оруэлл 328 Антиутопия Роман_о_тоталитарном_обществе\n\n"
+            "/addbook Мастер_и_Маргарита Михаил_Булгаков 480 Классика\n"
+            "/addbook 1984 Джордж_Оруэлл 328 Антиутопия Роман_о_тоталитарном_обществе\n\n"
             "📝 Пробелы в словах заменяйте на '_'"
         )
         return
@@ -213,10 +219,10 @@ async def addbook_command(update: Update, context):
         try:
             pages = int(args[2])
             if pages <= 0:
-                await update.message.reply_text(f"{EMOJI['cross']} Страниц должно быть положительным числом!")
+                await update.message.reply_text(f"{EMOJI['cross']} Количество страниц должно быть положительным числом!")
                 return
         except ValueError:
-            await update.message.reply_text(f"{EMOJI['cross']} Страниц должно быть числом!")
+            await update.message.reply_text(f"{EMOJI['cross']} Количество страниц должно быть числом!")
             return
         
         genre = args[3].replace('_', ' ').strip()
@@ -226,11 +232,17 @@ async def addbook_command(update: Update, context):
             desc_parts = args[4:]
             description = " ".join(desc_parts).replace('_', ' ').strip()
         
+        if not title or not author:
+            await update.message.reply_text(f"{EMOJI['cross']} Название и автор не могут быть пустыми!")
+            return
+        
         conn = sqlite3.connect('books.db')
         cursor = conn.cursor()
         
-        cursor.execute('SELECT id FROM books WHERE LOWER(title) = LOWER(?) AND LOWER(author) = LOWER(?)', 
-                      (title, author))
+        cursor.execute(
+            'SELECT id FROM books WHERE LOWER(title) = LOWER(?) AND LOWER(author) = LOWER(?)',
+            (title, author)
+        )
         existing = cursor.fetchone()
         
         if existing:
@@ -271,9 +283,12 @@ async def addbook_command(update: Update, context):
         
         print(f"Добавлена новая книга: '{title}' - '{author}' (ID: {book_id})")
         
+    except sqlite3.Error as e:
+        await update.message.reply_text(f"{EMOJI['cross']} Ошибка базы данных: {str(e)}")
+        print(f"Ошибка БД в /addbook: {e}")
     except Exception as e:
         await update.message.reply_text(f"{EMOJI['cross']} Ошибка: {str(e)}")
-        print(f"Ошибка /addbook: {e}")
+        print(f"Ошибка в /addbook: {e}")
 
 async def search_command(update: Update, context):
     if not context.args:
