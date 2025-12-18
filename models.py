@@ -1,4 +1,5 @@
-from database import Database
+from project1 import Database
+
 class Book:
     """
     Класс для представления книги в библиотеке.
@@ -29,13 +30,13 @@ class Book:
 
         Returns:
             str: Строка с информацией о книге в формате:
-                📖 Название
+                📖 Название: Название книги
                 👤 Автор: Имя автора
                 📂 Жанр: Название жанра
                 📄 Страниц: количество
                 📝 Краткое описание (если есть)
         """
-        info = f"📖 {self.title}\n"
+        info = f"📖 Название: {self.title}\n"
         info += f"👤 Автор: {self.author}\n"
         info += f"📂 Жанр: {self.genre}\n"
         info += f"📄 Страниц: {self.total_pages}"
@@ -53,7 +54,7 @@ class Book:
         """
         try:
             return self.title[:15] + "..." if len(self.title) > 15 else self.title
-        except Exception:
+        except Exception as e:
             return ""
 
 
@@ -94,17 +95,15 @@ class UserBook:
         Рассчитывает процент прочтения книги.
 
         Returns:
-            float: Процент прочтения от 0 до 100
-
-        Raises:
-            ZeroDivisionError: Если total_pages равно 0
+            float: Процент прочтения от 0.0 до 100.0.
+            Всегда возвращает 0.0 при некорректных входных данных или ошибках.
         """
         try:
             if self.total_pages > 0 and self.current_page > 0:
                 percent = (self.current_page / self.total_pages) * 100
                 return min(100, percent)
             return 0
-        except ZeroDivisionError:
+        except Exception:
             return 0
 
     def get_info(self):
@@ -167,7 +166,7 @@ class BookManager:
         """
         self.db = db
 
-    def get_book(self, book_id):
+    def get_books(self, book_id):
         """
         Получает книгу по идентификатору.
 
@@ -184,7 +183,7 @@ class BookManager:
             print(f"Ошибка получения книги: {e}")
             return None
 
-    def search_books(self, query="", genre="", limit=10):
+    def search_book(self, query="", genre="", limit=10):
         """
         Ищет книги по запросу и жанру.
 
@@ -203,7 +202,7 @@ class BookManager:
             print(f"Ошибка поиска книг: {e}")
             return []
 
-    def get_top_books(self, criteria="rating", genre="", author="", limit=5):
+    def get_top_book(self, criteria="rating", genre="", author="", limit=5):
         """
         Получает список лучших книг по заданным критериям.
 
@@ -223,7 +222,7 @@ class BookManager:
             print(f"Ошибка получения топ книг: {e}")
             return []
 
-    def get_all_genres(self):
+    def get_all_genre(self):
         """
         Получает список всех доступных жанров книг в библиотеке.
 
@@ -244,7 +243,7 @@ class UserManager:
         """
         self.db = db
 
-    def get_or_create_user(self, telegram_id, username="", first_name="", last_name=""):
+    def get_or_create_users(self, telegram_id, username="", first_name="", last_name=""):
         """
         Получает существующего пользователя или создает нового.
 
@@ -300,7 +299,7 @@ class UserManager:
             print(f"Ошибка удаления книги: {e}")
             return False
 
-    def update_book_status(self, user_id, book_id, status, current_page=0):
+    def update_books_status(self, user_id, book_id, status, current_page=0):
         """
         Обновляет статус чтения книги пользователем.
 
@@ -361,7 +360,7 @@ class UserManager:
         except Exception:
             return False
 
-    def get_user_books(self, user_id, status=None):
+    def get_user_book(self, user_id, status=None):
         """
         Получает книги пользователя.
 
@@ -406,7 +405,7 @@ class UserManager:
             List[UserBook]: Список объектов UserBook со статусом 'completed'
         """
         try:
-            books = self.get_user_books(user_id)
+            books = self.get_user_book(user_id)
             return [book for book in books if book.is_completed()]
         except Exception as e:
             print(f"Ошибка получения завершенных книг: {e}")
@@ -423,7 +422,7 @@ class UserManager:
             int: Количество книг в коллекции пользователя или 0 при ошибке
         """
         try:
-            books = self.get_user_books(user_id)
+            books = self.get_user_book(user_id)
             return len(books)
         except Exception as e:
             print(f"Ошибка подсчета книг пользователя: {e}")
@@ -442,7 +441,7 @@ class UserManager:
             None если книга отсутствует в коллекции пользователя
         """
         try:
-            user_books = self.get_user_books(user_id)
+            user_books = self.get_user_book(user_id)
             for book in user_books:
                 if book.book_id == book_id:
                     return book
@@ -467,7 +466,7 @@ class UserManager:
         except Exception:
             return False
 
-    def rate_book(self, user_id, book_id, rating):
+    def rate_books(self, user_id, book_id, rating):
         """
         Устанавливает оценку книги пользователем.
 
