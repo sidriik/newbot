@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-import sqlite3
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
     Application, CommandHandler, MessageHandler, CallbackQueryHandler,
@@ -7,13 +6,10 @@ from telegram.ext import (
 )
 
 from database import Database
-from models import UserManager, BookManager
 
 TOKEN = "8371793740:AAGyHz10Ro6JabxomkyjDGsjWhNaf3SUeMI"
 
 db = Database()
-user_manager = UserManager(db)
-book_manager = BookManager(db)
 
 # Состояния для пошагового добавления книги
 ADD_BOOK_STATES = {}
@@ -24,7 +20,7 @@ ADD_BOOK_STATES = {}
 async def start_command(update: Update, context):
     user = update.effective_user
     
-    user_id = user_manager.get_or_create_user(
+    user_id = db.get_or_create_user(
         telegram_id=user.id,
         username=user.username,
         first_name=user.first_name,
@@ -83,45 +79,45 @@ async def progress_command(update: Update, context):
         book_id = int(context.args[0])
         page = int(context.args[1])
         
-        user_db_id = user_manager.get_or_create_user(
+        user_db_id = db.get_or_create_user(
             telegram_id=user.id,
             username=user.username,
             first_name=user.first_name
         )
         
-        book_info = user_manager.get_book_info(user_db_id, book_id)
+        book_info = db.get_book_info(user_db_id, book_id)
         if not book_info:
             await update.message.reply_text("У тебя нет этой книги.")
             return
         
-        if book_info.status != 'reading':
+        if book_info['status'] != 'reading':
             await update.message.reply_text("Эту книгу ты сейчас не читаешь.")
             return
         
-        book = book_manager.get_book(book_id)
+        book = db.get_book(book_id)
         if not book:
             await update.message.reply_text("Книга не найдена.")
             return
         
-        if page > book.total_pages:
-            await update.message.reply_text(f"В книге всего {book.total_pages} страниц!")
+        if page > book['total_pages']:
+            await update.message.reply_text(f"В книге всего {book['total_pages']} страниц!")
             return
         
-        ok = user_manager.update_progress(user_db_id, book_id, page)
+        ok = db.update_progress(user_db_id, book_id, page)
         if not ok:
             await update.message.reply_text("Ошибка обновления.")
             return
         
-        progress = (page / book.total_pages) * 100
+        progress = (page / book['total_pages']) * 100
         
         if progress >= 100:
-            user_manager.update_book_status(user_db_id, book_id, 'completed')
+            db.update_book_status(user_db_id, book_id, 'completed')
             message = f"""🎉 Поздравляю! Прочитал книгу!
 
-{book.title}
-👤 {book.author}
+{book['title']}
+👤 {book['author']}
 
-Страниц: {page}/{book.total_pages} (100%)"""
+Страниц: {page}/{book['total_pages']} (100%)"""
             keyboard = [[
                 InlineKeyboardButton("⭐ Оценить книгу", callback_data=f"ratebook_{book_id}"),
                 InlineKeyboardButton("📚 Мои книги", callback_data="mybooks")
@@ -129,10 +125,10 @@ async def progress_command(update: Update, context):
         else:
             message = f"""📖 Прогресс обновлен!
 
-{book.title}
-👤 {book.author}
+{book['title']}
+👤 {book['author']}
 
-Страница: {page} из {book.total_pages}
+Страница: {page} из {book['total_pages']}
 Прогресс: {progress:.1f}%"""
             keyboard = [[
                 InlineKeyboardButton("📊 Еще обновить", callback_data=f"progress_{book_id}"),
@@ -157,18 +153,18 @@ async def add_command(update: Update, context):
         user = update.effective_user
         book_id = int(context.args[0])
         
-        user_db_id = user_manager.get_or_create_user(
+        user_db_id = db.get_or_create_user(
             telegram_id=user.id,
             username=user.username,
             first_name=user.first_name
         )
         
-        book = book_manager.get_book(book_id)
+        book = db.get_book(book_id)
         if not book:
             await update.message.reply_text(f"Книга {book_id} не найдена.")
             return
         
-        ok = user_manager.add_book(user_db_id, book_id, 'planned')
+        ok = db.add_user_book(user_db_id, book_id, 'planned')
         
         if not ok:
             await update.message.reply_text("Эта книга уже есть.")
@@ -176,9 +172,9 @@ async def add_command(update: Update, context):
         
         message = f"""✅ Книга добавлена!
 
-{book.title}
-👤 {book.author}
-📄 {book.total_pages} стр.
+{book['title']}
+👤 {book['author']}
+📄 {book['total_pages']} стр.
 📂 Статус: Запланировано"""
         
         keyboard = [
@@ -241,34 +237,19 @@ async def addbook_command(update: Update, context):
                 await update.message.reply_text("❌ Название и автор не могут быть пустыми!")
                 return
             
-            # Добавляем в базу данных
-            conn = sqlite3.connect('books.db')
-            cursor = conn.cursor()
+            # Используем метод из Database для добавления книги
+            success, book_id, message = db.add_book_to_catalog_simple(title, author, pages, genre, description)
             
-            # Проверяем, нет ли уже такой книги
-            cursor.execute('SELECT id FROM books WHERE LOWER(title) = LOWER(?) AND LOWER(author) = LOWER(?)', 
-                          (title, author))
-            existing = cursor.fetchone()
-            
-            if existing:
-                book_id = existing[0]
-                await update.message.reply_text(
-                    f"❌ Книга уже есть в каталоге!\n"
-                    f"ID: {book_id} - {title} ({author})\n\n"
-                    f"Добавить себе: /add {book_id}"
-                )
-                conn.close()
+            if not success:
+                # Если книга уже существует, показываем ID
+                if "уже есть" in message.lower():
+                    await update.message.reply_text(
+                        f"{message}\n\n"
+                        f"Добавить себе: /add {book_id}"
+                    )
+                else:
+                    await update.message.reply_text(message)
                 return
-            
-            # Добавляем новую книгу
-            cursor.execute('''
-                INSERT INTO books (title, author, total_pages, genre, description)
-                VALUES (?, ?, ?, ?, ?)
-            ''', (title, author, pages, genre, description))
-            
-            book_id = cursor.lastrowid
-            conn.commit()
-            conn.close()
             
             # Показываем результат (БЕЗ EMOJI в начале, чтобы избежать ошибки кодировки)
             response = f"""Книга добавлена в каталог!
@@ -318,13 +299,13 @@ async def search_command(update: Update, context):
 async def stats_command(update: Update, context):
     user = update.effective_user
     
-    user_db_id = user_manager.get_or_create_user(
+    user_db_id = db.get_or_create_user(
         telegram_id=user.id,
         username=user.username,
         first_name=user.first_name
     )
     
-    stats = user_manager.get_stats(user_db_id)
+    stats = db.get_user_stats(user_db_id)
     
     message = f"""📊 Твоя статистика:
 
@@ -442,63 +423,42 @@ async def handle_text_message(update: Update, context):
             del ADD_BOOK_STATES[user_id]
             
             # Добавляем книгу в базу
-            try:
-                conn = sqlite3.connect('books.db')
-                cursor = conn.cursor()
-                
-                # Проверяем, нет ли уже такой книги
-                cursor.execute('SELECT id FROM books WHERE LOWER(title) = LOWER(?) AND LOWER(author) = LOWER(?)', 
-                              (title, author))
-                existing = cursor.fetchone()
-                
-                if existing:
-                    book_id = existing[0]
+            success, book_id, message = db.add_book_to_catalog_simple(title, author, pages, genre, description)
+            
+            if not success:
+                # Если книга уже существует
+                if "уже есть" in message.lower():
                     await update.message.reply_text(
-                        f"❌ Книга уже есть в каталоге!\n"
-                        f"ID: {book_id} - {title} ({author})\n\n"
+                        f"{message}\n\n"
                         f"Добавить себе: /add {book_id}"
                     )
-                    conn.close()
-                    return
-                
-                # Добавляем новую книгу
-                cursor.execute('''
-                    INSERT INTO books (title, author, total_pages, genre, description)
-                    VALUES (?, ?, ?, ?, ?)
-                ''', (title, author, pages, genre, description))
-                
-                book_id = cursor.lastrowid
-                conn.commit()
-                conn.close()
-                
-                # Показываем результат (БЕЗ EMOJI в начале)
-                response = f"""Книга добавлена в каталог!
+                else:
+                    await update.message.reply_text(f"Ошибка при добавлении книги: {message}")
+                return
+            
+            # Показываем результат (БЕЗ EMOJI в начале)
+            response = f"""Книга добавлена в каталог!
 
 📖 ID: {book_id}
 📚 Название: {title}
 👤 Автор: {author}
 📄 Страниц: {pages}
 📂 Жанр: {genre}"""
-                
-                if description:
-                    response += f"\n📝 Описание: {description}"
-                
-                response += f"\n\n💡 Добавить себе: /add {book_id}"
-                
-                await update.message.reply_text(response)
-                
-                print(f"Добавлена новая книга (пошагово): '{title}' - '{author}' (ID: {book_id})")
-                
-            except Exception as e:
-                # Используем простой текст без эмодзи в ошибке
-                await update.message.reply_text(f"Ошибка при добавлении книги: {str(e)}")
-                print(f"Ошибка в пошаговом добавлении книги: {e}")
+            
+            if description:
+                response += f"\n📝 Описание: {description}"
+            
+            response += f"\n\n💡 Добавить себе: /add {book_id}"
+            
+            await update.message.reply_text(response)
+            
+            print(f"Добавлена новая книга (пошагово): '{title}' - '{author}' (ID: {book_id})")
         
         return
     
     # Если это не пошаговое добавление книги, делаем обычный поиск
     if len(text) >= 2:
-        books = book_manager.search_books(text, limit=5)
+        books = db.search_books_by_text(text)
         
         if not books:
             keyboard = [
@@ -513,15 +473,15 @@ async def handle_text_message(update: Update, context):
         
         keyboard_buttons = []
         for i, book in enumerate(books, 1):
-            stats = db.get_book_stats(book.id)
+            stats = db.get_book_stats(book['id'])
             rating = f" ⭐{stats['avg_rating']:.1f}" if stats['avg_rating'] > 0 else ""
             
-            message += f"\n{i}. {book.title}"
-            message += f"\n   👤 {book.author}{rating} (ID: {book.id})"
+            message += f"\n{i}. {book['title']}"
+            message += f"\n   👤 {book['author']}{rating} (ID: {book['id']})"
             
-            short = book.title[:12] + "..." if len(book.title) > 12 else book.title
+            short = book['title'][:12] + "..." if len(book['title']) > 12 else book['title']
             keyboard_buttons.append([
-                InlineKeyboardButton(f"➕ Добавить '{short}'", callback_data=f"add_{book.id}")
+                InlineKeyboardButton(f"➕ Добавить '{short}'", callback_data=f"add_{book['id']}")
             ])
         
         keyboard_buttons.append([InlineKeyboardButton("🔍 Новый поиск", callback_data="search")])
@@ -539,7 +499,7 @@ async def button_handler(update: Update, context):
     user = update.effective_user
     data = query.data
     
-    user_db_id = user_manager.get_or_create_user(
+    user_db_id = db.get_or_create_user(
         telegram_id=user.id,
         username=user.username,
         first_name=user.first_name
@@ -560,7 +520,7 @@ async def button_handler(update: Update, context):
     
     # Мои книги
     elif data == "mybooks":
-        books = user_manager.get_user_books(user_db_id)
+        books = db.get_user_books(user_db_id)
         
         if not books:
             keyboard = [
@@ -578,13 +538,13 @@ async def button_handler(update: Update, context):
         dropped = []
         
         for book in books:
-            if book.status == 'planned':
+            if book['status'] == 'planned':
                 planned.append(book)
-            elif book.status == 'reading':
+            elif book['status'] == 'reading':
                 reading.append(book)
-            elif book.status == 'completed':
+            elif book['status'] == 'completed':
                 completed.append(book)
-            elif book.status == 'dropped':
+            elif book['status'] == 'dropped':
                 dropped.append(book)
         
         message = "📚 Твои книги:\n"
@@ -592,21 +552,21 @@ async def button_handler(update: Update, context):
         if reading:
             message += f"\n📖 Читаю сейчас ({len(reading)}):"
             for i, book in enumerate(reading[:3], 1):
-                prog = book.get_progress()
-                short = book.title[:15] + "..." if len(book.title) > 15 else book.title
+                prog = (book['current_page'] / book['total_pages']) * 100 if book['total_pages'] else 0
+                short = book['title'][:15] + "..." if len(book['title']) > 15 else book['title']
                 message += f"\n{i}. {short} - {prog:.0f}%"
         
         if planned:
             message += f"\n\n📅 Запланировано ({len(planned)}):"
             for i, book in enumerate(planned[:3], 1):
-                short = book.title[:15] + "..." if len(book.title) > 15 else book.title
+                short = book['title'][:15] + "..." if len(book['title']) > 15 else book['title']
                 message += f"\n{i}. {short}"
         
         if completed:
             message += f"\n\n✅ Прочитано ({len(completed)}):"
             for i, book in enumerate(completed[:3], 1):
-                short = book.title[:15] + "..." if len(book.title) > 15 else book.title
-                rating = f" ⭐{book.rating}" if book.rating else ""
+                short = book['title'][:15] + "..." if len(book['title']) > 15 else book['title']
+                rating = f" ⭐{book['rating']}" if book['rating'] else ""
                 message += f"\n{i}. {short}{rating}"
         
         keyboard = [
@@ -624,7 +584,7 @@ async def button_handler(update: Update, context):
     
     # Добавить книгу (показываем популярные)
     elif data == "add_book":
-        popular = book_manager.search_books(limit=5)
+        popular = db.get_popular_books(limit=5)
         
         if not popular:
             keyboard = [
@@ -636,8 +596,9 @@ async def button_handler(update: Update, context):
         
         keyboard_buttons = []
         for book in popular:
+            short = book['title'][:15] + "..." if len(book['title']) > 15 else book['title']
             keyboard_buttons.append([
-                InlineKeyboardButton(f"📖 {book.get_short()}", callback_data=f"add_{book.id}")
+                InlineKeyboardButton(f"📖 {short}", callback_data=f"add_{book['id']}")
             ])
         
         keyboard_buttons.append([InlineKeyboardButton("🔍 Найти другую", callback_data="search")])
@@ -647,9 +608,9 @@ async def button_handler(update: Update, context):
     
     # Начать читать
     elif data == "start_reading":
-        planned = user_manager.get_user_books(user_db_id, "planned")
+        planned_books = db.get_user_books(user_db_id, "planned")
         
-        if not planned:
+        if not planned_books:
             keyboard = [
                 [InlineKeyboardButton("➕ Добавить книгу", callback_data="add_book"),
                  InlineKeyboardButton("📚 Мои книги", callback_data="mybooks")],
@@ -659,9 +620,10 @@ async def button_handler(update: Update, context):
             return
         
         keyboard_buttons = []
-        for book in planned[:5]:
+        for book in planned_books[:5]:
+            short = book['title'][:15] + "..." if len(book['title']) > 15 else book['title']
             keyboard_buttons.append([
-                InlineKeyboardButton(f"📖 {book.title[:15]}...", callback_data=f"start_{book.book_id}")
+                InlineKeyboardButton(f"📖 {short}", callback_data=f"start_{book['book_id']}")
             ])
         
         keyboard_buttons.append([InlineKeyboardButton("📚 Все книги", callback_data="mybooks")])
@@ -671,7 +633,7 @@ async def button_handler(update: Update, context):
     
     # Статистика
     elif data == "stats":
-        stats = user_manager.get_stats(user_db_id)
+        stats = db.get_user_stats(user_db_id)
         
         message = f"""📊 Твоя статистика:
 
@@ -694,9 +656,9 @@ async def button_handler(update: Update, context):
     
     # Оценить книгу (из меню)
     elif data == "rate_book":
-        completed = user_manager.get_user_books(user_db_id, "completed")
+        completed_books = db.get_user_books(user_db_id, "completed")
         
-        if not completed:
+        if not completed_books:
             keyboard = [
                 [InlineKeyboardButton("📖 Начать читать", callback_data="start_reading"),
                  InlineKeyboardButton("📚 Мои книги", callback_data="mybooks")],
@@ -707,14 +669,16 @@ async def button_handler(update: Update, context):
         
         # Кнопки для оценки
         keyboard_buttons = []
-        for book in completed[:3]:
-            if book.rating:
+        for book in completed_books[:3]:
+            if book['rating']:
+                short = book['title'][:10] + "..." if len(book['title']) > 10 else book['title']
                 keyboard_buttons.append([
-                    InlineKeyboardButton(f"⭐ {book.rating}/5 - {book.title[:10]}...", callback_data="no_action")
+                    InlineKeyboardButton(f"⭐ {book['rating']}/5 - {short}", callback_data="no_action")
                 ])
             else:
+                short = book['title'][:15] + "..." if len(book['title']) > 15 else book['title']
                 keyboard_buttons.append([
-                    InlineKeyboardButton(f"📖 {book.title[:15]}...", callback_data=f"rateshow_{book.book_id}")
+                    InlineKeyboardButton(f"📖 {short}", callback_data=f"rateshow_{book['book_id']}")
                 ])
         
         keyboard_buttons.append([InlineKeyboardButton("📚 Мои книги", callback_data="mybooks")])
@@ -726,7 +690,7 @@ async def button_handler(update: Update, context):
     elif data.startswith("rateshow_"):
         try:
             book_id = int(data.replace("rateshow_", ""))
-            book = book_manager.get_book(book_id)
+            book = db.get_book(book_id)
             
             if not book:
                 await query.edit_message_text("❌ Книга не найдена.", reply_markup=InlineKeyboardMarkup([
@@ -743,7 +707,7 @@ async def button_handler(update: Update, context):
             keyboard_buttons.append([InlineKeyboardButton("🔙 Назад", callback_data="rate_book")])
             
             await query.edit_message_text(
-                f"⭐ Оцени книгу:\n\n{book.title}\n👤 {book.author}",
+                f"⭐ Оцени книгу:\n\n{book['title']}\n👤 {book['author']}",
                 reply_markup=InlineKeyboardMarkup(keyboard_buttons)
             )
         except:
@@ -755,7 +719,7 @@ async def button_handler(update: Update, context):
     elif data.startswith("ratebook_"):
         try:
             book_id = int(data.replace("ratebook_", ""))
-            book = book_manager.get_book(book_id)
+            book = db.get_book(book_id)
             
             if not book:
                 await query.edit_message_text("❌ Книга не найдена.", reply_markup=InlineKeyboardMarkup([
@@ -772,7 +736,7 @@ async def button_handler(update: Update, context):
             keyboard_buttons.append([InlineKeyboardButton("🔙 Назад", callback_data="mybooks")])
             
             await query.edit_message_text(
-                f"⭐ Оцени прочитанную книгу:\n\n{book.title}\n👤 {book.author}",
+                f"⭐ Оцени прочитанную книгу:\n\n{book['title']}\n👤 {book['author']}",
                 reply_markup=InlineKeyboardMarkup(keyboard_buttons)
             )
         except:
@@ -821,7 +785,7 @@ async def button_handler(update: Update, context):
     elif data.startswith("add_"):
         try:
             book_id = int(data.replace("add_", ""))
-            book = book_manager.get_book(book_id)
+            book = db.get_book(book_id)
             
             if not book:
                 await query.edit_message_text("❌ Книга не найдена.", reply_markup=InlineKeyboardMarkup([
@@ -829,7 +793,7 @@ async def button_handler(update: Update, context):
                 ]))
                 return
             
-            if user_manager.add_book(user_db_id, book_id, "planned"):
+            if db.add_user_book(user_db_id, book_id, "planned"):
                 keyboard = [
                     [InlineKeyboardButton("📖 Начать читать", callback_data=f"start_{book_id}"),
                      InlineKeyboardButton("📚 Мои книги", callback_data="mybooks")],
@@ -840,9 +804,9 @@ async def button_handler(update: Update, context):
                 await query.edit_message_text(
                     f"""✅ Книга добавлена!
 
-{book.title}
-👤 {book.author}
-📄 {book.total_pages} стр.
+{book['title']}
+👤 {book['author']}
+📄 {book['total_pages']} стр.
 📂 Статус: Запланировано""",
                     reply_markup=InlineKeyboardMarkup(keyboard)
                 )
@@ -863,14 +827,14 @@ async def button_handler(update: Update, context):
         try:
             book_id = int(data.replace("start_", ""))
             
-            if not user_manager.has_book(user_db_id, book_id):
+            if not db.has_book(user_db_id, book_id):
                 await query.edit_message_text("❌ У тебя нет этой книги.", reply_markup=InlineKeyboardMarkup([
                     [InlineKeyboardButton("🔙 Назад", callback_data="start_reading")]
                 ]))
                 return
             
-            if user_manager.update_book_status(user_db_id, book_id, "reading"):
-                book = book_manager.get_book(book_id)
+            if db.update_book_status(user_db_id, book_id, "reading"):
+                book = db.get_book(book_id)
                 
                 keyboard = [
                     [InlineKeyboardButton("📊 Обновить прогресс", callback_data=f"progress_{book_id}"),
@@ -882,9 +846,9 @@ async def button_handler(update: Update, context):
                 await query.edit_message_text(
                     f"""📖 Начинаем читать!
 
-{book.title}
-👤 {book.author}
-📄 Всего страниц: {book.total_pages}
+{book['title']}
+👤 {book['author']}
+📄 Всего страниц: {book['total_pages']}
 
 Чтобы обновить прогресс:
 /progress {book_id} <страница>""",
@@ -907,8 +871,8 @@ async def button_handler(update: Update, context):
                 book_id = int(parts[0])
                 rating = int(parts[1])
                 
-                if user_manager.rate_book(user_db_id, book_id, rating):
-                    book = book_manager.get_book(book_id)
+                if db.rate_book(user_db_id, book_id, rating):
+                    book = db.get_book(book_id)
                     stats = db.get_book_stats(book_id)
                     
                     keyboard = [
@@ -924,7 +888,7 @@ async def button_handler(update: Update, context):
                     await query.edit_message_text(
                         f"""✅ Оценка поставлена!
 
-{book.title}
+{book['title']}
 {rating_text}
 
 📊 Общий рейтинг книги: {avg_rating}/5
@@ -955,14 +919,14 @@ async def button_handler(update: Update, context):
         try:
             book_id = int(data.replace("finish_", ""))
             
-            if not user_manager.has_book(user_db_id, book_id):
+            if not db.has_book(user_db_id, book_id):
                 await query.edit_message_text("❌ У тебя нет этой книги.", reply_markup=InlineKeyboardMarkup([
                     [InlineKeyboardButton("🔙 Назад", callback_data="mybooks")]
                 ]))
                 return
             
-            if user_manager.update_book_status(user_db_id, book_id, "completed"):
-                book = book_manager.get_book(book_id)
+            if db.update_book_status(user_db_id, book_id, "completed"):
+                book = db.get_book(book_id)
                 
                 keyboard = [
                     [InlineKeyboardButton("⭐ Оценить книгу", callback_data=f"ratebook_{book_id}"),
@@ -973,8 +937,8 @@ async def button_handler(update: Update, context):
                 await query.edit_message_text(
                     f"""🎉 Поздравляю с прочтением!
 
-{book.title}
-👤 {book.author}""",
+{book['title']}
+👤 {book['author']}""",
                     reply_markup=InlineKeyboardMarkup(keyboard)
                 )
             else:
@@ -999,7 +963,7 @@ async def button_handler(update: Update, context):
 # ========== ПОМОЩНИКИ ==========
 
 async def show_search_menu(upd):
-    genres = book_manager.get_all_genres()
+    genres = db.get_all_genres()
     
     keyboard_buttons = []
     for i in range(0, min(len(genres), 6), 2):
@@ -1021,7 +985,7 @@ async def show_search_menu(upd):
 
 
 async def do_search(upd, query, genre):
-    books = book_manager.search_books(query, genre, 10)
+    books = db.search_books(query, genre, 10)
     
     if not books:
         if query:
@@ -1049,16 +1013,16 @@ async def do_search(upd, query, genre):
     
     keyboard_buttons = []
     for i, book in enumerate(books, 1):
-        stats = db.get_book_stats(book.id)
+        stats = db.get_book_stats(book['id'])
         rating = f" ⭐{stats['avg_rating']:.1f}" if stats['avg_rating'] > 0 else ""
         
-        message += f"\n{i}. {book.title}"
-        message += f"\n   👤 {book.author}{rating}"
-        message += f"\n   📊 Добавили: {stats['total_added']} чел. | Читают сейчас: {stats['reading_now']} чел. (ID: {book.id})"
+        message += f"\n{i}. {book['title']}"
+        message += f"\n   👤 {book['author']}{rating}"
+        message += f"\n   📊 Добавили: {stats['total_added']} чел. | Читают сейчас: {stats['currently_reading']} чел. (ID: {book['id']})"
         
-        short = book.title[:12] + "..." if len(book.title) > 12 else book.title
+        short = book['title'][:12] + "..." if len(book['title']) > 12 else book['title']
         keyboard_buttons.append([
-            InlineKeyboardButton(f"➕ Добавить '{short}'", callback_data=f"add_{book.id}")
+            InlineKeyboardButton(f"➕ Добавить '{short}'", callback_data=f"add_{book['id']}")
         ])
     
     keyboard_buttons.append([InlineKeyboardButton("🔍 Новый поиск", callback_data="search")])
@@ -1071,11 +1035,11 @@ async def do_search(upd, query, genre):
 
 
 async def show_top_books(upd, criteria, filter_by=""):
-    genres = book_manager.get_all_genres()
+    genres = db.get_all_genres()
     genre = filter_by if filter_by in genres else ""
     author = filter_by if not genre and filter_by else ""
     
-    books = book_manager.get_top_books(criteria, genre, author, 5)
+    books = db.get_top_books(criteria, genre, author, 5)
     
     if not books:
         msg = "📭 Нет книг по этому критерию."
@@ -1105,22 +1069,22 @@ async def show_top_books(upd, criteria, filter_by=""):
     
     keyboard_buttons = []
     for i, book in enumerate(books, 1):
-        stats = db.get_book_stats(book.id)
+        stats = db.get_book_stats(book['id'])
         
         if criteria == 'rating':
             rating = stats['avg_rating']
             count = stats['rating_count']
-            line = f"{i}. {book.title} - ⭐ {rating:.1f}/5 ({count} оценок)"
+            line = f"{i}. {book['title']} - ⭐ {rating:.1f}/5 ({count} оценок)"
         else:
             added = stats['total_added']
-            line = f"{i}. {book.title} - 👥 {added} читателей"
+            line = f"{i}. {book['title']} - 👥 {added} читателей"
         
         message += f"\n{line}"
-        message += f"\n   👤 {book.author} (ID: {book.id})"
+        message += f"\n   👤 {book['author']} (ID: {book['id']})"
         
-        short = book.title[:12] + "..." if len(book.title) > 12 else book.title
+        short = book['title'][:12] + "..." if len(book['title']) > 12 else book['title']
         keyboard_buttons.append([
-            InlineKeyboardButton(f"➕ Добавить '{short}'", callback_data=f"add_{book.id}")
+            InlineKeyboardButton(f"➕ Добавить '{short}'", callback_data=f"add_{book['id']}")
         ])
     
     keyboard_buttons.append([InlineKeyboardButton("⭐ По рейтингу", callback_data="top_rating"),

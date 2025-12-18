@@ -23,6 +23,10 @@ class Database:
         return conn
     
     def init_db(self):
+        """
+        Инициализирует базу данных, создает таблицы если они не существуют.
+        Добавляет тестовые книги если база пустая.
+        """
         conn = self.get_connection()
         cur = conn.cursor()
         
@@ -557,3 +561,178 @@ class Database:
             conn.rollback()
             conn.close()
             return False, None, f"Неизвестная ошибка: {str(e)}"
+    
+    def add_book_to_catalog_simple(self, title, author, pages, genre, description=""):
+        """
+        Упрощенный метод добавления книги в каталог (из второго файла).
+        
+        :param title: Название книги
+        :type title: str
+        :param author: Автор книги
+        :type author: str
+        :param pages: Количество страниц
+        :type pages: int
+        :param genre: Жанр книги
+        :type genre: str
+        :param description: Описание книги
+        :type description: str
+        :returns: Кортеж (success, book_id, message)
+        :rtype: tuple
+        """
+        conn = self.get_connection()
+        cur = conn.cursor()
+        
+        try:
+            # Проверяем, нет ли уже такой книги
+            cur.execute(
+                'SELECT id FROM books WHERE LOWER(title) = LOWER(?) AND LOWER(author) = LOWER(?)',
+                (title, author)
+            )
+            existing = cur.fetchone()
+            
+            if existing:
+                conn.close()
+                return False, existing['id'], f"Книга уже есть в каталоге! ID: {existing['id']}"
+            
+            # Добавляем новую книгу
+            cur.execute('''
+                INSERT INTO books (title, author, total_pages, genre, description)
+                VALUES (?, ?, ?, ?, ?)
+            ''', (title, author, pages, genre, description))
+            
+            book_id = cur.lastrowid
+            conn.commit()
+            conn.close()
+            
+            return True, book_id, f"Книга добавлена в каталог! ID: {book_id}"
+            
+        except Exception as e:
+            conn.rollback()
+            conn.close()
+            return False, None, f"Ошибка: {str(e)}"
+    
+    def get_book_info(self, user_id, book_id):
+        """
+        Получает информацию о книге пользователя.
+        
+        :param user_id: ID пользователя
+        :type user_id: int
+        :param book_id: ID книги
+        :type book_id: int
+        :returns: Информация о книге пользователя или None
+        :rtype: dict or None
+        """
+        conn = self.get_connection()
+        cur = conn.cursor()
+        
+        cur.execute('''
+            SELECT ub.*, b.title, b.author, b.total_pages
+            FROM user_books ub
+            JOIN books b ON ub.book_id = b.id
+            WHERE ub.user_id = ? AND ub.book_id = ?
+        ''', (user_id, book_id))
+        
+        row = cur.fetchone()
+        conn.close()
+        
+        return dict(row) if row else None
+    
+    def update_progress(self, user_id, book_id, page):
+        """
+        Обновляет прогресс чтения книги.
+        
+        :param user_id: ID пользователя
+        :type user_id: int
+        :param book_id: ID книги
+        :type book_id: int
+        :param page: Текущая страница
+        :type page: int
+        :returns: True если успешно, False если ошибка
+        :rtype: bool
+        """
+        conn = self.get_connection()
+        cur = conn.cursor()
+        
+        cur.execute('''
+            UPDATE user_books 
+            SET current_page = ?
+            WHERE user_id = ? AND book_id = ?
+        ''', (page, user_id, book_id))
+        
+        updated = cur.rowcount > 0
+        conn.commit()
+        conn.close()
+        
+        return updated
+    
+    def has_book(self, user_id, book_id):
+        """
+        Проверяет, есть ли у пользователя книга.
+        
+        :param user_id: ID пользователя
+        :type user_id: int
+        :param book_id: ID книги
+        :type book_id: int
+        :returns: True если книга есть, False если нет
+        :rtype: bool
+        """
+        conn = self.get_connection()
+        cur = conn.cursor()
+        
+        cur.execute('''
+            SELECT id FROM user_books 
+            WHERE user_id = ? AND book_id = ?
+        ''', (user_id, book_id))
+        
+        exists = cur.fetchone() is not None
+        conn.close()
+        
+        return exists
+    
+    def search_books_by_text(self, query, limit=5):
+        """
+        Упрощенный поиск книг по тексту (из второго файла).
+        
+        :param query: Текст для поиска
+        :type query: str
+        :param limit: Максимальное количество результатов
+        :type limit: int
+        :returns: Список книг
+        :rtype: list
+        """
+        return self.search_books(query=query, limit=limit)
+    
+    def get_popular_books(self, limit=5):
+        """
+        Получает популярные книги.
+        
+        :param limit: Максимальное количество
+        :type limit: int
+        :returns: Список популярных книг
+        :rtype: list
+        """
+        return self.get_top_books(criteria="popularity", limit=limit)
+    
+    def check_book_exists(self, title, author):
+        """
+        Проверяет, существует ли книга в каталоге.
+        
+        :param title: Название книги
+        :type title: str
+        :param author: Автор книги
+        :type author: str
+        :returns: ID книги если существует, None если нет
+        :rtype: int or None
+        """
+        conn = self.get_connection()
+        cur = conn.cursor()
+        
+        cur.execute('''
+            SELECT id FROM books 
+            WHERE LOWER(title) = LOWER(?) AND LOWER(author) = LOWER(?)
+        ''', (title, author))
+        
+        row = cur.fetchone()
+        conn.close()
+        
+        return row['id'] if row else None
