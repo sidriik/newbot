@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import Mock
-from new_bot import Book, UserBook, BookManager, UserManager
+from models import Book, UserBook, BookManager, UserManager
 
 def test_book1():
     b = Book({'title': 'Гарри Поттер', 'author': 'Роулинг', 'genre': 'Фэнтези'})
