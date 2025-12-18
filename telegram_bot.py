@@ -212,7 +212,7 @@ async def addbook_command(update: Update, context):
 
     try:
         args = context.args
-title = args[0].replace('_', ' ').strip()
+        title = args[0].replace('_', ' ').strip()
         author = args[1].replace('_', ' ').strip()
 
         try:
@@ -505,7 +505,7 @@ if not books:
 
     elif data == "start_reading":
         planned = user_manager.get_user_books(user_db_id, "planned")
-if not planned:
+        if not planned:
             keyboard = [
                 [InlineKeyboardButton(f"{EMOJI['search']}  Добавить книгу", callback_data="add_book"),
                  InlineKeyboardButton("📚 Мои книги", callback_data="mybooks")],
