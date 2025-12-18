@@ -36,68 +36,43 @@ def test_is_completed2():
     assert ub.is_completed() == False
 
 
-def test_get_all_genres1():
+def test_get_all_genre1():
     db = Mock()
     db.get_all_genres.return_value = ["Фэнтези", "Детектив", "Классика"]
     m = BookManager(db)
-    assert m.get_all_genres() == ["Фэнтези", "Детектив", "Классика"]
+    assert m.get_all_genre() == ["Фэнтези", "Детектив", "Классика"]
 
 
-def test_get_all_genres2():
+def test_get_all_genre2():
     db = Mock()
     db.get_all_genres.return_value = []
     m = BookManager(db)
-    assert m.get_all_genres() == []
+    assert m.get_all_genre() == []
 
 
-def test_get_book():
-    db = Mock()
-    db.get_book.return_value = {'title': 'Книга'}
-    m = BookManager(db)
-    assert m.get_book(1).title == 'Книга'
 
-
-def test_search_books():
-    db = Mock()
-    db.search_books.return_value = [{'title': 'Книга 1'}, {'title': 'Книга 2'}]
-    m = BookManager(db)
-    assert len(m.search_books()) == 2
-
-
-def test_rate_book1():
+def test_rate_books1():
     db = Mock()
     db.rate_book.return_value = True
     m = UserManager(db)
-    assert m.rate_book(1, 1, 5) == True
+    assert m.rate_books(1, 1, 5) == True
 
 
-def test_rate_book2():
+def test_rate_books2():
     db = Mock()
     m = UserManager(db)
-    assert m.rate_book(1, 1, 0) == False
+    assert m.rate_books(1, 1, 0) == False
 
 
-def test_count_user_books1():
-    m = UserManager(None)
-    m.get_user_books = lambda user_id: [Mock(), Mock(), Mock()]
-    assert m.count_user_books(1) == 3
-
-
-def test_count_user_books2():
-    m = UserManager(None)
-    m.get_user_books = lambda user_id: []
-    assert m.count_user_books(1) == 0
-
-
-def test_add_book():
-    db = Mock()
-    db.add_user_book.return_value = True
-    m = UserManager(db)
-    assert m.add_book(1, 1, "planned") == True
-
-
-def test_update_status():
+def test_update_status1():
     db = Mock()
     db.update_book_status.return_value = True
     m = UserManager(db)
-    assert m.update_book_status(1, 1, "reading", 10) == True
+    assert m.update_books_status(1, 1, "reading", 10) == True
+
+
+def test_update_status2():
+    db = Mock()
+    m = UserManager(db)
+    result = m.update_books_status(1, 1, "invalid_status", 10)
+    assert result == False

@@ -583,7 +583,6 @@ class Database:
         cur = conn.cursor()
         
         try:
-            # Проверяем, нет ли уже такой книги
             cur.execute(
                 'SELECT id FROM books WHERE LOWER(title) = LOWER(?) AND LOWER(author) = LOWER(?)',
                 (title, author)
@@ -593,8 +592,7 @@ class Database:
             if existing:
                 conn.close()
                 return False, existing['id'], f"Книга уже есть в каталоге! ID: {existing['id']}"
-            
-            # Добавляем новую книгу
+
             cur.execute('''
                 INSERT INTO books (title, author, total_pages, genre, description)
                 VALUES (?, ?, ?, ?, ?)

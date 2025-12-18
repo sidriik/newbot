@@ -1,0 +1,1251 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+          "DTD/xhtml1-strict.dtd">
+<html>
+  
+
+  <head>
+    
+    <title>database.Database</title>
+    <meta name="generator" content="pydoctor 25.10.1"> 
+        
+    </meta>
+    <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1 maximum-scale=1" />
+    <link rel="stylesheet" type="text/css" href="bootstrap.min.css" />
+    <link rel="stylesheet" type="text/css" href="apidocs.css" />
+    <link rel="stylesheet" type="text/css" href="extra.css" />
+    
+</head>
+
+  <body>
+
+    
+
+    <nav class="navbar navbar-default mainnavbar">
+      
+  
+  <div class="container-fluid">
+
+
+    <div class="navbar-header">
+      
+      <div class="navlinks">
+        <span class="navbar-brand">
+          NewBot <a href="index.html">API Documentation</a>
+        </span>
+
+        <a href="moduleIndex.html">
+          Modules
+        </a>
+
+        <a href="classIndex.html">
+          Classes
+        </a>
+
+        <a href="nameIndex.html">
+          Names
+        </a>
+
+        <div id="search-box-container">
+          <div class="input-group">
+            <input id="search-box" type="search" name="search-query" placeholder="Search..." aria-label="Search" minlength="2" class="form-control" autocomplete="off" />
+            
+            <span class="input-group-btn">
+              <a style="display: none;" class="btn btn-default" id="search-clear-button" title="Clear" onclick="clearSearch()"><img src="fonts/x-circle.svg" alt="Clear" /></a>
+              <a class="btn btn-default" id="apidocs-help-button" title="Help" href="apidocs-help.html"><img src="fonts/info.svg" alt="Help" /></a>
+            </span>
+          </div>
+        </div>
+
+      </div>
+
+      <div id="search-results-container" style="display: none;">
+        
+        <div id="search-buttons">
+          <span class="label label-default" id="search-docstrings-button">
+          <label class="checkbox-inline">
+            <input type="checkbox" id="toggle-search-in-docstrings-checkbox" value="false" onclick="toggleSearchInDocstrings()">
+              search in docstrings
+            </input>
+          </label>
+          </span>
+          
+        </div>
+        
+        <noscript>
+            <h1>Cannot search: JavaScript is not supported/enabled in your browser.</h1>
+        </noscript>
+
+        <div id="search-status"> </div>
+
+        <div class="warning" id="search-warn-box" style="display: none;">
+          <p class="rst-last"><span id="search-warn"></span></p>
+        </div>
+
+        <table id="search-results">
+          <!-- Filled dynamically by JS -->
+        </table>
+        
+        <div style="margin-top: 10px;">
+          <p>For more information on the search, visit the <a href="apidocs-help.html#rst-search">help page</a>.</p>
+        </div>
+      </div>
+
+    </div>
+
+
+  </div>
+</nav>
+    
+    <div class="container-fluid">
+
+      <!-- Side navigation -->
+      <div class="sidebarcontainer" style="display: none;">
+        
+        <div class="sidebar"><nav class="sidebar">
+  
+
+  <div>
+
+      <div class="thingTitle">
+        <span>Class</span>
+        <code class="thisobject"><a href="database.Database.html" class="internal-link" title="This class"><wbr></wbr>Database</a></code> 
+      </div>
+      
+      <div>
+        
+
+        
+         
+
+        
+        
+
+        <div class="childrenKindTitle">Methods</div>
+        <ul>
+    
+    <li class="">
+        
+        
+        
+
+        
+            <div class="itemName"><code><a href="#__init__" class="internal-link" title="database.Database.__init__">__init__</a></code>
+            </div>
+        
+
+    </li><li class="">
+        
+        
+        
+
+        
+            <div class="itemName"><code><a href="#add_book_to_catalog" class="internal-link" title="database.Database.add_book_to_catalog">add<wbr></wbr>_book<wbr></wbr>_to<wbr></wbr>_catalog</a></code>
+            </div>
+        
+
+    </li><li class="">
+        
+        
+        
+
+        
+            <div class="itemName"><code><a href="#add_book_to_catalog_simple" class="internal-link" title="database.Database.add_book_to_catalog_simple">add<wbr></wbr>_book<wbr></wbr>_to<wbr></wbr>_catalog<wbr></wbr>_simple</a></code>
+            </div>
+        
+
+    </li><li class="">
+        
+        
+        
+
+        
+            <div class="itemName"><code><a href="#add_user_book" class="internal-link" title="database.Database.add_user_book">add<wbr></wbr>_user<wbr></wbr>_book</a></code>
+            </div>
+        
+
+    </li><li class="">
+        
+        
+        
+
+        
+            <div class="itemName"><code><a href="#check_book_exists" class="internal-link" title="database.Database.check_book_exists">check<wbr></wbr>_book<wbr></wbr>_exists</a></code>
+            </div>
+        
+
+    </li><li class="">
+        
+        
+        
+
+        
+            <div class="itemName"><code><a href="#get_all_genres" class="internal-link" title="database.Database.get_all_genres">get<wbr></wbr>_all<wbr></wbr>_genres</a></code>
+            </div>
+        
+
+    </li><li class="">
+        
+        
+        
+
+        
+            <div class="itemName"><code><a href="#get_book" class="internal-link" title="database.Database.get_book">get<wbr></wbr>_book</a></code>
+            </div>
+        
+
+    </li><li class="">
+        
+        
+        
+
+        
+            <div class="itemName"><code><a href="#get_book_info" class="internal-link" title="database.Database.get_book_info">get<wbr></wbr>_book<wbr></wbr>_info</a></code>
+            </div>
+        
+
+    </li><li class="">
+        
+        
+        
+
+        
+            <div class="itemName"><code><a href="#get_book_stats" class="internal-link" title="database.Database.get_book_stats">get<wbr></wbr>_book<wbr></wbr>_stats</a></code>
+            </div>
+        
+
+    </li><li class="">
+        
+        
+        
+
+        
+            <div class="itemName"><code><a href="#get_connection" class="internal-link" title="database.Database.get_connection">get<wbr></wbr>_connection</a></code>
+            </div>
+        
+
+    </li><li class="">
+        
+        
+        
+
+        
+            <div class="itemName"><code><a href="#get_or_create_user" class="internal-link" title="database.Database.get_or_create_user">get<wbr></wbr>_or<wbr></wbr>_create<wbr></wbr>_user</a></code>
+            </div>
+        
+
+    </li><li class="">
+        
+        
+        
+
+        
+            <div class="itemName"><code><a href="#get_popular_books" class="internal-link" title="database.Database.get_popular_books">get<wbr></wbr>_popular<wbr></wbr>_books</a></code>
+            </div>
+        
+
+    </li><li class="">
+        
+        
+        
+
+        
+            <div class="itemName"><code><a href="#get_top_books" class="internal-link" title="database.Database.get_top_books">get<wbr></wbr>_top<wbr></wbr>_books</a></code>
+            </div>
+        
+
+    </li><li class="">
+        
+        
+        
+
+        
+            <div class="itemName"><code><a href="#get_user_books" class="internal-link" title="database.Database.get_user_books">get<wbr></wbr>_user<wbr></wbr>_books</a></code>
+            </div>
+        
+
+    </li><li class="">
+        
+        
+        
+
+        
+            <div class="itemName"><code><a href="#get_user_stats" class="internal-link" title="database.Database.get_user_stats">get<wbr></wbr>_user<wbr></wbr>_stats</a></code>
+            </div>
+        
+
+    </li><li class="">
+        
+        
+        
+
+        
+            <div class="itemName"><code><a href="#has_book" class="internal-link" title="database.Database.has_book">has<wbr></wbr>_book</a></code>
+            </div>
+        
+
+    </li><li class="">
+        
+        
+        
+
+        
+            <div class="itemName"><code><a href="#init_db" class="internal-link" title="database.Database.init_db">init<wbr></wbr>_db</a></code>
+            </div>
+        
+
+    </li><li class="">
+        
+        
+        
+
+        
+            <div class="itemName"><code><a href="#rate_book" class="internal-link" title="database.Database.rate_book">rate<wbr></wbr>_book</a></code>
+            </div>
+        
+
+    </li><li class="">
+        
+        
+        
+
+        
+            <div class="itemName"><code><a href="#remove_user_book" class="internal-link" title="database.Database.remove_user_book">remove<wbr></wbr>_user<wbr></wbr>_book</a></code>
+            </div>
+        
+
+    </li><li class="">
+        
+        
+        
+
+        
+            <div class="itemName"><code><a href="#search_books" class="internal-link" title="database.Database.search_books">search<wbr></wbr>_books</a></code>
+            </div>
+        
+
+    </li><li class="">
+        
+        
+        
+
+        
+            <div class="itemName"><code><a href="#search_books_by_text" class="internal-link" title="database.Database.search_books_by_text">search<wbr></wbr>_books<wbr></wbr>_by<wbr></wbr>_text</a></code>
+            </div>
+        
+
+    </li><li class="">
+        
+        
+        
+
+        
+            <div class="itemName"><code><a href="#update_book_status" class="internal-link" title="database.Database.update_book_status">update<wbr></wbr>_book<wbr></wbr>_status</a></code>
+            </div>
+        
+
+    </li><li class="">
+        
+        
+        
+
+        
+            <div class="itemName"><code><a href="#update_progress" class="internal-link" title="database.Database.update_progress">update<wbr></wbr>_progress</a></code>
+            </div>
+        
+
+    </li><li class="private">
+        
+        
+        
+
+        
+            <div class="itemName"><code><a href="#_add_test_books" class="internal-link" title="database.Database._add_test_books">_add<wbr></wbr>_test<wbr></wbr>_books</a></code>
+            </div>
+        
+
+    </li>
+</ul> 
+
+        
+         
+
+        <div class="childrenKindTitle">Attributes</div>
+        <ul>
+    
+    <li class="">
+        
+        
+        
+
+        
+            <div class="itemName"><code><a href="#db_path" class="internal-link" title="database.Database.db_path">db<wbr></wbr>_path</a></code>
+            </div>
+        
+
+    </li>
+</ul> 
+
+        
+         
+        
+      </div>
+  </div><div>
+
+      <div class="thingTitle">
+        <span>Module</span>
+        <code><a href="database.html" class="internal-link" title="The parent of this class">database</a></code> 
+      </div>
+      
+      <div>
+        
+
+        
+         
+
+        <div class="childrenKindTitle">Classes</div>
+        <ul>
+    
+    <li class=" thisobject">
+        
+        
+        
+
+        
+            <div class="itemName"><code><a href="database.Database.html" class="internal-link" title="database.Database"><wbr></wbr>Database</a></code>
+            </div>
+        
+
+    </li><li class="">
+        
+        
+        
+
+        
+            <div class="itemName"><code><a href="database.DatabaseError.html" class="internal-link" title="database.DatabaseError"><wbr></wbr>Database<wbr></wbr>Error</a></code>
+            </div>
+        
+
+    </li>
+</ul>
+
+        
+         
+
+        
+         
+
+        
+         
+
+        
+         
+        
+      </div>
+  </div>
+
+</nav>
+        </div>
+        <div id="collapse-sidebar">
+          <a class="btn btn-link" onclick="toggleSideBarCollapse()" title="Toggle Sidebar Collapse">
+          </a>
+        </div> 
+        <script src="sidebartoggle.js" type="text/javascript"></script>
+       
+      </div>
+
+      <main class="">
+        
+
+        
+
+        <div class="page-header">
+          <h1 class="class"><code><code><a href="database.html" class="internal-link">database</a></code><wbr></wbr>.<code><a href="database.Database.html" class="internal-link" title="database.Database">Database</a></code></code></h1>
+          <div id="show-private">
+            <button class="btn btn-link" onclick="togglePrivate()">Toggle Private API</button>
+          </div>
+        </div>
+
+        <div class="categoryHeader">
+          class documentation
+        </div>
+
+        <div class="extrasDocstring">
+          <p class="class-signature"><code><span class="py-keyword">class</span> <span class="py-defname">Database</span>:</code></p><p>Constructor: <code><a href="#__init__" class="internal-link" title="database.Database.__init__">Database(db_path)</a></code></p><p><a href="classIndex.html#database.Database">View In Hierarchy</a></p>
+        </div>
+
+        <div class="moduleDocstring">
+          <div><p class="undocumented">Undocumented</p></div>
+        </div>
+
+        <div id="split-tables">
+          <table class="children sortable" id="id2">
+  
+  
+  <tr class="method">
+    
+    <td>Method</td>
+    <td><code><a href="#__init__" class="internal-link" title="database.Database.__init__">__init__</a></code></td>
+    <td><span class="rst-undocumented">Undocumented</span></td>
+  </tr><tr class="method">
+    
+    <td>Method</td>
+    <td><code><a href="#add_book_to_catalog" class="internal-link" title="database.Database.add_book_to_catalog">add<wbr></wbr>_book<wbr></wbr>_to<wbr></wbr>_catalog</a></code></td>
+    <td>Добавляет новую книгу в каталог.</td>
+  </tr><tr class="method">
+    
+    <td>Method</td>
+    <td><code><a href="#add_book_to_catalog_simple" class="internal-link" title="database.Database.add_book_to_catalog_simple">add<wbr></wbr>_book<wbr></wbr>_to<wbr></wbr>_catalog<wbr></wbr>_simple</a></code></td>
+    <td>Упрощенный метод добавления книги в каталог (из второго файла).</td>
+  </tr><tr class="method">
+    
+    <td>Method</td>
+    <td><code><a href="#add_user_book" class="internal-link" title="database.Database.add_user_book">add<wbr></wbr>_user<wbr></wbr>_book</a></code></td>
+    <td>Добавляет книгу в коллекцию пользователя.</td>
+  </tr><tr class="method">
+    
+    <td>Method</td>
+    <td><code><a href="#check_book_exists" class="internal-link" title="database.Database.check_book_exists">check<wbr></wbr>_book<wbr></wbr>_exists</a></code></td>
+    <td>Проверяет, существует ли книга в каталоге.</td>
+  </tr><tr class="method">
+    
+    <td>Method</td>
+    <td><code><a href="#get_all_genres" class="internal-link" title="database.Database.get_all_genres">get<wbr></wbr>_all<wbr></wbr>_genres</a></code></td>
+    <td>Получает все уникальные жанры из базы данных.</td>
+  </tr><tr class="method">
+    
+    <td>Method</td>
+    <td><code><a href="#get_book" class="internal-link" title="database.Database.get_book">get<wbr></wbr>_book</a></code></td>
+    <td>Получает информацию о книге по её ID.</td>
+  </tr><tr class="method">
+    
+    <td>Method</td>
+    <td><code><a href="#get_book_info" class="internal-link" title="database.Database.get_book_info">get<wbr></wbr>_book<wbr></wbr>_info</a></code></td>
+    <td>Получает информацию о книге пользователя.</td>
+  </tr><tr class="method">
+    
+    <td>Method</td>
+    <td><code><a href="#get_book_stats" class="internal-link" title="database.Database.get_book_stats">get<wbr></wbr>_book<wbr></wbr>_stats</a></code></td>
+    <td>Получает статистику по книге.</td>
+  </tr><tr class="method">
+    
+    <td>Method</td>
+    <td><code><a href="#get_connection" class="internal-link" title="database.Database.get_connection">get<wbr></wbr>_connection</a></code></td>
+    <td>Создает и возвращает соединение с базой данных.</td>
+  </tr><tr class="method">
+    
+    <td>Method</td>
+    <td><code><a href="#get_or_create_user" class="internal-link" title="database.Database.get_or_create_user">get<wbr></wbr>_or<wbr></wbr>_create<wbr></wbr>_user</a></code></td>
+    <td>Получает или создает пользователя по Telegram ID.</td>
+  </tr><tr class="method">
+    
+    <td>Method</td>
+    <td><code><a href="#get_popular_books" class="internal-link" title="database.Database.get_popular_books">get<wbr></wbr>_popular<wbr></wbr>_books</a></code></td>
+    <td>Получает популярные книги.</td>
+  </tr><tr class="method">
+    
+    <td>Method</td>
+    <td><code><a href="#get_top_books" class="internal-link" title="database.Database.get_top_books">get<wbr></wbr>_top<wbr></wbr>_books</a></code></td>
+    <td>Получает топ книг по заданным критериям.</td>
+  </tr><tr class="method">
+    
+    <td>Method</td>
+    <td><code><a href="#get_user_books" class="internal-link" title="database.Database.get_user_books">get<wbr></wbr>_user<wbr></wbr>_books</a></code></td>
+    <td>Получает книги пользователя.</td>
+  </tr><tr class="method">
+    
+    <td>Method</td>
+    <td><code><a href="#get_user_stats" class="internal-link" title="database.Database.get_user_stats">get<wbr></wbr>_user<wbr></wbr>_stats</a></code></td>
+    <td>Получает статистику пользователя.</td>
+  </tr><tr class="method">
+    
+    <td>Method</td>
+    <td><code><a href="#has_book" class="internal-link" title="database.Database.has_book">has<wbr></wbr>_book</a></code></td>
+    <td>Проверяет, есть ли у пользователя книга.</td>
+  </tr><tr class="method">
+    
+    <td>Method</td>
+    <td><code><a href="#init_db" class="internal-link" title="database.Database.init_db">init<wbr></wbr>_db</a></code></td>
+    <td>Инициализирует базу данных, создает таблицы если они не существуют. Добавляет тестовые книги если база пустая.</td>
+  </tr><tr class="method">
+    
+    <td>Method</td>
+    <td><code><a href="#rate_book" class="internal-link" title="database.Database.rate_book">rate<wbr></wbr>_book</a></code></td>
+    <td>Оценивает книгу пользователем.</td>
+  </tr><tr class="method">
+    
+    <td>Method</td>
+    <td><code><a href="#remove_user_book" class="internal-link" title="database.Database.remove_user_book">remove<wbr></wbr>_user<wbr></wbr>_book</a></code></td>
+    <td>Удаляет книгу из коллекции пользователя.</td>
+  </tr><tr class="method">
+    
+    <td>Method</td>
+    <td><code><a href="#search_books" class="internal-link" title="database.Database.search_books">search<wbr></wbr>_books</a></code></td>
+    <td>Ищет книги по заданным критериям.</td>
+  </tr><tr class="method">
+    
+    <td>Method</td>
+    <td><code><a href="#search_books_by_text" class="internal-link" title="database.Database.search_books_by_text">search<wbr></wbr>_books<wbr></wbr>_by<wbr></wbr>_text</a></code></td>
+    <td>Упрощенный поиск книг по тексту (из второго файла).</td>
+  </tr><tr class="method">
+    
+    <td>Method</td>
+    <td><code><a href="#update_book_status" class="internal-link" title="database.Database.update_book_status">update<wbr></wbr>_book<wbr></wbr>_status</a></code></td>
+    <td>Обновляет статус книги у пользователя.</td>
+  </tr><tr class="method">
+    
+    <td>Method</td>
+    <td><code><a href="#update_progress" class="internal-link" title="database.Database.update_progress">update<wbr></wbr>_progress</a></code></td>
+    <td>Обновляет прогресс чтения книги.</td>
+  </tr><tr class="instancevariable">
+    
+    <td>Instance Variable</td>
+    <td><code><a href="#db_path" class="internal-link" title="database.Database.db_path">db<wbr></wbr>_path</a></code></td>
+    <td><span class="rst-undocumented">Undocumented</span></td>
+  </tr><tr class="method private">
+    
+    <td>Method</td>
+    <td><code><a href="#_add_test_books" class="internal-link" title="database.Database._add_test_books">_add<wbr></wbr>_test<wbr></wbr>_books</a></code></td>
+    <td>Добавляет тестовые книги в базу данных.</td>
+  </tr>
+</table>
+          
+
+            
+        </div>
+
+        <div id="child-list">
+          <div class="basemethod">
+  
+  
+  <a name="database.Database.__init__">
+    
+  </a>
+  <a name="__init__">
+    
+  </a>
+  <div class="functionHeader">
+    
+    
+    <span class="py-keyword">def</span>&#160;<span class="py-defname">__init__</span><span class="function-signature">(<span class="rst-sig-param"><span class="rst-undocumented">self</span>, </span><span class="rst-sig-param">db_path=<span class="rst-variable-quote">'</span><span class="rst-variable-string">books.db</span><span class="rst-variable-quote">'</span></span>):</span>
+    
+    <a class="headerLink" href="#__init__" title="database.Database.__init__">
+      
+      
+      ¶
+    </a>
+  </div>
+  <div class="docstring functionBody">
+    
+    <div><p class="undocumented">Undocumented</p></div>
+  </div>
+</div><div class="basemethod">
+  
+  
+  <a name="database.Database.add_book_to_catalog">
+    
+  </a>
+  <a name="add_book_to_catalog">
+    
+  </a>
+  <div class="functionHeader">
+    
+    
+    <span class="py-keyword">def</span>&#160;<span class="py-defname">add_book_to_catalog</span><span class="function-signature">(<span class="rst-sig-param"><span class="rst-undocumented">self</span>, </span><span class="rst-sig-param">title, </span><span class="rst-sig-param">author, </span><span class="rst-sig-param">pages, </span><span class="rst-sig-param">genre, </span><span class="rst-sig-param">description=<span class="rst-variable-quote">'</span><span class="rst-variable-string"></span><span class="rst-variable-quote">'</span></span>):</span>
+    
+    <a class="headerLink" href="#add_book_to_catalog" title="database.Database.add_book_to_catalog">
+      
+      
+      ¶
+    </a>
+  </div>
+  <div class="docstring functionBody">
+    
+    <div><p>Добавляет новую книгу в каталог.</p>
+<p>Проверяет, нет ли уже такой книги. Если нет - добавляет.</p>
+<table class="fieldTable"><tr class="fieldStart"><td class="fieldName" colspan="2">Parameters</td></tr><tr><td class="fieldArgContainer"><span class="fieldArg">title:</span>str</td><td class="fieldArgDesc">Название книги</td></tr><tr><td class="fieldArgContainer"><span class="fieldArg">author:</span>str</td><td class="fieldArgDesc">Автор книги</td></tr><tr><td class="fieldArgContainer"><span class="fieldArg">pages:</span>int</td><td class="fieldArgDesc">Количество страниц</td></tr><tr><td class="fieldArgContainer"><span class="fieldArg">genre:</span>str</td><td class="fieldArgDesc">Жанр книги</td></tr><tr><td class="fieldArgContainer"><span class="fieldArg">description:</span>str</td><td class="fieldArgDesc">Описание книги</td></tr></table><table class="fieldTable"><tr class="fieldStart"><td class="fieldName" colspan="2">Returns</td></tr><tr><td class="fieldArgContainer">tuple</td><td class="fieldArgDesc">Кортеж (success, book_id, message)
+- success (bool): True если успешно, False если ошибка
+- book_id (int): ID книги или None
+- message (str): Сообщение для пользователя</td></tr></table><table class="fieldTable"><tr class="fieldStart"><td class="fieldName" colspan="2">Raises</td></tr><tr><td class="fieldArgContainer"><code>sqlite3.IntegrityError</code></td><td>При нарушении целостности данных</td></tr></table></div>
+  </div>
+</div><div class="basemethod">
+  
+  
+  <a name="database.Database.add_book_to_catalog_simple">
+    
+  </a>
+  <a name="add_book_to_catalog_simple">
+    
+  </a>
+  <div class="functionHeader">
+    
+    
+    <span class="py-keyword">def</span>&#160;<span class="py-defname">add_book_to_catalog_simple</span><span class="function-signature">(<span class="rst-sig-param"><span class="rst-undocumented">self</span>, </span><span class="rst-sig-param">title, </span><span class="rst-sig-param">author, </span><span class="rst-sig-param">pages, </span><span class="rst-sig-param">genre, </span><span class="rst-sig-param">description=<span class="rst-variable-quote">'</span><span class="rst-variable-string"></span><span class="rst-variable-quote">'</span></span>):</span>
+    
+    <a class="headerLink" href="#add_book_to_catalog_simple" title="database.Database.add_book_to_catalog_simple">
+      
+      
+      ¶
+    </a>
+  </div>
+  <div class="docstring functionBody">
+    
+    <div><p>Упрощенный метод добавления книги в каталог (из второго файла).</p><table class="fieldTable"><tr class="fieldStart"><td class="fieldName" colspan="2">Parameters</td></tr><tr><td class="fieldArgContainer"><span class="fieldArg">title:</span>str</td><td class="fieldArgDesc">Название книги</td></tr><tr><td class="fieldArgContainer"><span class="fieldArg">author:</span>str</td><td class="fieldArgDesc">Автор книги</td></tr><tr><td class="fieldArgContainer"><span class="fieldArg">pages:</span>int</td><td class="fieldArgDesc">Количество страниц</td></tr><tr><td class="fieldArgContainer"><span class="fieldArg">genre:</span>str</td><td class="fieldArgDesc">Жанр книги</td></tr><tr><td class="fieldArgContainer"><span class="fieldArg">description:</span>str</td><td class="fieldArgDesc">Описание книги</td></tr></table><table class="fieldTable"><tr class="fieldStart"><td class="fieldName" colspan="2">Returns</td></tr><tr><td class="fieldArgContainer">tuple</td><td class="fieldArgDesc">Кортеж (success, book_id, message)</td></tr></table></div>
+  </div>
+</div><div class="basemethod">
+  
+  
+  <a name="database.Database.add_user_book">
+    
+  </a>
+  <a name="add_user_book">
+    
+  </a>
+  <div class="functionHeader">
+    
+    
+    <span class="py-keyword">def</span>&#160;<span class="py-defname">add_user_book</span><span class="function-signature">(<span class="rst-sig-param"><span class="rst-undocumented">self</span>, </span><span class="rst-sig-param">user_id, </span><span class="rst-sig-param">book_id, </span><span class="rst-sig-param">status=<span class="rst-variable-quote">'</span><span class="rst-variable-string">planned</span><span class="rst-variable-quote">'</span></span>):</span>
+    
+    <a class="headerLink" href="#add_user_book" title="database.Database.add_user_book">
+      
+      
+      ¶
+    </a>
+  </div>
+  <div class="docstring functionBody">
+    
+    <div><p>Добавляет книгу в коллекцию пользователя.</p><table class="fieldTable"><tr class="fieldStart"><td class="fieldName" colspan="2">Parameters</td></tr><tr><td class="fieldArgContainer"><span class="fieldArg">user<wbr></wbr>_id:</span>int</td><td class="fieldArgDesc">ID пользователя</td></tr><tr><td class="fieldArgContainer"><span class="fieldArg">book<wbr></wbr>_id:</span>int</td><td class="fieldArgDesc">ID книги</td></tr><tr><td class="fieldArgContainer"><span class="fieldArg">status:</span>str</td><td class="fieldArgDesc">Статус книги</td></tr></table><table class="fieldTable"><tr class="fieldStart"><td class="fieldName" colspan="2">Returns</td></tr><tr><td class="fieldArgContainer">bool</td><td class="fieldArgDesc">True если книга добавлена, False если уже существует</td></tr></table></div>
+  </div>
+</div><div class="basemethod">
+  
+  
+  <a name="database.Database.check_book_exists">
+    
+  </a>
+  <a name="check_book_exists">
+    
+  </a>
+  <div class="functionHeader">
+    
+    
+    <span class="py-keyword">def</span>&#160;<span class="py-defname">check_book_exists</span><span class="function-signature">(<span class="rst-sig-param"><span class="rst-undocumented">self</span>, </span><span class="rst-sig-param">title, </span><span class="rst-sig-param">author</span>):</span>
+    
+    <a class="headerLink" href="#check_book_exists" title="database.Database.check_book_exists">
+      
+      
+      ¶
+    </a>
+  </div>
+  <div class="docstring functionBody">
+    
+    <div><p>Проверяет, существует ли книга в каталоге.</p><table class="fieldTable"><tr class="fieldStart"><td class="fieldName" colspan="2">Parameters</td></tr><tr><td class="fieldArgContainer"><span class="fieldArg">title:</span>str</td><td class="fieldArgDesc">Название книги</td></tr><tr><td class="fieldArgContainer"><span class="fieldArg">author:</span>str</td><td class="fieldArgDesc">Автор книги</td></tr></table><table class="fieldTable"><tr class="fieldStart"><td class="fieldName" colspan="2">Returns</td></tr><tr><td class="fieldArgContainer">int or None</td><td class="fieldArgDesc">ID книги если существует, None если нет</td></tr></table></div>
+  </div>
+</div><div class="basemethod">
+  
+  
+  <a name="database.Database.get_all_genres">
+    
+  </a>
+  <a name="get_all_genres">
+    
+  </a>
+  <div class="functionHeader">
+    
+    
+    <span class="py-keyword">def</span>&#160;<span class="py-defname">get_all_genres</span><span class="function-signature">(<span class="rst-sig-param"><span class="rst-undocumented">self</span></span>):</span>
+    
+    <a class="headerLink" href="#get_all_genres" title="database.Database.get_all_genres">
+      
+      
+      ¶
+    </a>
+  </div>
+  <div class="docstring functionBody">
+    
+    <div><p>Получает все уникальные жанры из базы данных.</p><table class="fieldTable"><tr class="fieldStart"><td class="fieldName" colspan="2">Returns</td></tr><tr><td class="fieldArgContainer">list</td><td class="fieldArgDesc">Список жанров</td></tr></table></div>
+  </div>
+</div><div class="basemethod">
+  
+  
+  <a name="database.Database.get_book">
+    
+  </a>
+  <a name="get_book">
+    
+  </a>
+  <div class="functionHeader">
+    
+    
+    <span class="py-keyword">def</span>&#160;<span class="py-defname">get_book</span><span class="function-signature">(<span class="rst-sig-param"><span class="rst-undocumented">self</span>, </span><span class="rst-sig-param">book_id</span>):</span>
+    
+    <a class="headerLink" href="#get_book" title="database.Database.get_book">
+      
+      
+      ¶
+    </a>
+  </div>
+  <div class="docstring functionBody">
+    
+    <div><p>Получает информацию о книге по её ID.</p><table class="fieldTable"><tr class="fieldStart"><td class="fieldName" colspan="2">Parameters</td></tr><tr><td class="fieldArgContainer"><span class="fieldArg">book<wbr></wbr>_id:</span>int</td><td class="fieldArgDesc">ID книги</td></tr></table><table class="fieldTable"><tr class="fieldStart"><td class="fieldName" colspan="2">Returns</td></tr><tr><td class="fieldArgContainer">dict or None</td><td class="fieldArgDesc">Словарь с информацией о книге или None</td></tr></table></div>
+  </div>
+</div><div class="basemethod">
+  
+  
+  <a name="database.Database.get_book_info">
+    
+  </a>
+  <a name="get_book_info">
+    
+  </a>
+  <div class="functionHeader">
+    
+    
+    <span class="py-keyword">def</span>&#160;<span class="py-defname">get_book_info</span><span class="function-signature">(<span class="rst-sig-param"><span class="rst-undocumented">self</span>, </span><span class="rst-sig-param">user_id, </span><span class="rst-sig-param">book_id</span>):</span>
+    
+    <a class="headerLink" href="#get_book_info" title="database.Database.get_book_info">
+      
+      
+      ¶
+    </a>
+  </div>
+  <div class="docstring functionBody">
+    
+    <div><p>Получает информацию о книге пользователя.</p><table class="fieldTable"><tr class="fieldStart"><td class="fieldName" colspan="2">Parameters</td></tr><tr><td class="fieldArgContainer"><span class="fieldArg">user<wbr></wbr>_id:</span>int</td><td class="fieldArgDesc">ID пользователя</td></tr><tr><td class="fieldArgContainer"><span class="fieldArg">book<wbr></wbr>_id:</span>int</td><td class="fieldArgDesc">ID книги</td></tr></table><table class="fieldTable"><tr class="fieldStart"><td class="fieldName" colspan="2">Returns</td></tr><tr><td class="fieldArgContainer">dict or None</td><td class="fieldArgDesc">Информация о книге пользователя или None</td></tr></table></div>
+  </div>
+</div><div class="basemethod">
+  
+  
+  <a name="database.Database.get_book_stats">
+    
+  </a>
+  <a name="get_book_stats">
+    
+  </a>
+  <div class="functionHeader">
+    
+    
+    <span class="py-keyword">def</span>&#160;<span class="py-defname">get_book_stats</span><span class="function-signature">(<span class="rst-sig-param"><span class="rst-undocumented">self</span>, </span><span class="rst-sig-param">book_id</span>):</span>
+    
+    <a class="headerLink" href="#get_book_stats" title="database.Database.get_book_stats">
+      
+      
+      ¶
+    </a>
+  </div>
+  <div class="docstring functionBody">
+    
+    <div><p>Получает статистику по книге.</p><table class="fieldTable"><tr class="fieldStart"><td class="fieldName" colspan="2">Parameters</td></tr><tr><td class="fieldArgContainer"><span class="fieldArg">book<wbr></wbr>_id:</span>int</td><td class="fieldArgDesc">ID книги</td></tr></table><table class="fieldTable"><tr class="fieldStart"><td class="fieldName" colspan="2">Returns</td></tr><tr><td class="fieldArgContainer">dict</td><td class="fieldArgDesc">Статистика по книге</td></tr></table></div>
+  </div>
+</div><div class="basemethod">
+  
+  
+  <a name="database.Database.get_connection">
+    
+  </a>
+  <a name="get_connection">
+    
+  </a>
+  <div class="functionHeader">
+    
+    
+    <span class="py-keyword">def</span>&#160;<span class="py-defname">get_connection</span><span class="function-signature">(<span class="rst-sig-param"><span class="rst-undocumented">self</span></span>):</span>
+    
+    <a class="headerLink" href="#get_connection" title="database.Database.get_connection">
+      
+      
+      ¶
+    </a>
+  </div>
+  <div class="docstring functionBody">
+    
+    <div><p>Создает и возвращает соединение с базой данных.</p><table class="fieldTable"><tr class="fieldStart"><td class="fieldName" colspan="2">Returns</td></tr><tr><td class="fieldArgContainer">sqlite3.Connection</td><td class="fieldArgDesc">Соединение с базой данных</td></tr></table></div>
+  </div>
+</div><div class="basemethod">
+  
+  
+  <a name="database.Database.get_or_create_user">
+    
+  </a>
+  <a name="get_or_create_user">
+    
+  </a>
+  <div class="functionHeader">
+    
+    
+    <span class="py-keyword">def</span>&#160;<span class="py-defname">get_or_create_user</span><span class="function-signature">(<span class="rst-sig-param"><span class="rst-undocumented">self</span>, </span><span class="rst-sig-param">telegram_id, </span><span class="rst-sig-param">username=<span class="rst-variable-quote">'</span><span class="rst-variable-string"></span><span class="rst-variable-quote">'</span>, </span><span class="rst-sig-param">first_name=<span class="rst-variable-quote">'</span><span class="rst-variable-string"></span><span class="rst-variable-quote">'</span>, </span><span class="rst-sig-param">last_name=<span class="rst-variable-quote">'</span><span class="rst-variable-string"></span><span class="rst-variable-quote">'</span></span>):</span>
+    
+    <a class="headerLink" href="#get_or_create_user" title="database.Database.get_or_create_user">
+      
+      
+      ¶
+    </a>
+  </div>
+  <div class="docstring functionBody">
+    
+    <div><p>Получает или создает пользователя по Telegram ID.</p><table class="fieldTable"><tr class="fieldStart"><td class="fieldName" colspan="2">Parameters</td></tr><tr><td class="fieldArgContainer"><span class="fieldArg">telegram<wbr></wbr>_id:</span>int</td><td class="fieldArgDesc">ID пользователя в Telegram</td></tr><tr><td class="fieldArgContainer"><span class="fieldArg">username:</span>str</td><td class="fieldArgDesc">Имя пользователя</td></tr><tr><td class="fieldArgContainer"><span class="fieldArg">first<wbr></wbr>_name:</span>str</td><td class="fieldArgDesc">Имя</td></tr><tr><td class="fieldArgContainer"><span class="fieldArg">last<wbr></wbr>_name:</span>str</td><td class="fieldArgDesc">Фамилия</td></tr></table><table class="fieldTable"><tr class="fieldStart"><td class="fieldName" colspan="2">Returns</td></tr><tr><td class="fieldArgContainer">int</td><td class="fieldArgDesc">ID пользователя в базе данных</td></tr></table></div>
+  </div>
+</div><div class="basemethod">
+  
+  
+  <a name="database.Database.get_popular_books">
+    
+  </a>
+  <a name="get_popular_books">
+    
+  </a>
+  <div class="functionHeader">
+    
+    
+    <span class="py-keyword">def</span>&#160;<span class="py-defname">get_popular_books</span><span class="function-signature">(<span class="rst-sig-param"><span class="rst-undocumented">self</span>, </span><span class="rst-sig-param">limit=5</span>):</span>
+    
+    <a class="headerLink" href="#get_popular_books" title="database.Database.get_popular_books">
+      
+      
+      ¶
+    </a>
+  </div>
+  <div class="docstring functionBody">
+    
+    <div><p>Получает популярные книги.</p><table class="fieldTable"><tr class="fieldStart"><td class="fieldName" colspan="2">Parameters</td></tr><tr><td class="fieldArgContainer"><span class="fieldArg">limit:</span>int</td><td class="fieldArgDesc">Максимальное количество</td></tr></table><table class="fieldTable"><tr class="fieldStart"><td class="fieldName" colspan="2">Returns</td></tr><tr><td class="fieldArgContainer">list</td><td class="fieldArgDesc">Список популярных книг</td></tr></table></div>
+  </div>
+</div><div class="basemethod">
+  
+  
+  <a name="database.Database.get_top_books">
+    
+  </a>
+  <a name="get_top_books">
+    
+  </a>
+  <div class="functionHeader">
+    
+    
+    <span class="py-keyword">def</span>&#160;<span class="py-defname">get_top_books</span><span class="function-signature">(<span class="rst-sig-param"><span class="rst-undocumented">self</span>, </span><span class="rst-sig-param">criteria=<span class="rst-variable-quote">'</span><span class="rst-variable-string">rating</span><span class="rst-variable-quote">'</span>, </span><span class="rst-sig-param">genre=<span class="rst-variable-quote">'</span><span class="rst-variable-string"></span><span class="rst-variable-quote">'</span>, </span><span class="rst-sig-param">author=<span class="rst-variable-quote">'</span><span class="rst-variable-string"></span><span class="rst-variable-quote">'</span>, </span><span class="rst-sig-param">limit=5</span>):</span>
+    
+    <a class="headerLink" href="#get_top_books" title="database.Database.get_top_books">
+      
+      
+      ¶
+    </a>
+  </div>
+  <div class="docstring functionBody">
+    
+    <div><p>Получает топ книг по заданным критериям.</p><table class="fieldTable"><tr class="fieldStart"><td class="fieldName" colspan="2">Parameters</td></tr><tr><td class="fieldArgContainer"><span class="fieldArg">criteria:</span>str</td><td class="fieldArgDesc">Критерий сортировки ('rating' или другое)</td></tr><tr><td class="fieldArgContainer"><span class="fieldArg">genre:</span>str</td><td class="fieldArgDesc">Фильтр по жанру</td></tr><tr><td class="fieldArgContainer"><span class="fieldArg">author:</span>str</td><td class="fieldArgDesc">Фильтр по автору</td></tr><tr><td class="fieldArgContainer"><span class="fieldArg">limit:</span>int</td><td class="fieldArgDesc">Максимальное количество</td></tr></table><table class="fieldTable"><tr class="fieldStart"><td class="fieldName" colspan="2">Returns</td></tr><tr><td class="fieldArgContainer">list</td><td class="fieldArgDesc">Список топ книг</td></tr></table></div>
+  </div>
+</div><div class="basemethod">
+  
+  
+  <a name="database.Database.get_user_books">
+    
+  </a>
+  <a name="get_user_books">
+    
+  </a>
+  <div class="functionHeader">
+    
+    
+    <span class="py-keyword">def</span>&#160;<span class="py-defname">get_user_books</span><span class="function-signature">(<span class="rst-sig-param"><span class="rst-undocumented">self</span>, </span><span class="rst-sig-param">user_id, </span><span class="rst-sig-param">status=None</span>):</span>
+    
+    <a class="headerLink" href="#get_user_books" title="database.Database.get_user_books">
+      
+      
+      ¶
+    </a>
+  </div>
+  <div class="docstring functionBody">
+    
+    <div><p>Получает книги пользователя.</p><table class="fieldTable"><tr class="fieldStart"><td class="fieldName" colspan="2">Parameters</td></tr><tr><td class="fieldArgContainer"><span class="fieldArg">user<wbr></wbr>_id:</span>int</td><td class="fieldArgDesc">ID пользователя</td></tr><tr><td class="fieldArgContainer"><span class="fieldArg">status:</span>str</td><td class="fieldArgDesc">Фильтр по статусу</td></tr></table><table class="fieldTable"><tr class="fieldStart"><td class="fieldName" colspan="2">Returns</td></tr><tr><td class="fieldArgContainer">list</td><td class="fieldArgDesc">Список книг пользователя</td></tr></table></div>
+  </div>
+</div><div class="basemethod">
+  
+  
+  <a name="database.Database.get_user_stats">
+    
+  </a>
+  <a name="get_user_stats">
+    
+  </a>
+  <div class="functionHeader">
+    
+    
+    <span class="py-keyword">def</span>&#160;<span class="py-defname">get_user_stats</span><span class="function-signature">(<span class="rst-sig-param"><span class="rst-undocumented">self</span>, </span><span class="rst-sig-param">user_id</span>):</span>
+    
+    <a class="headerLink" href="#get_user_stats" title="database.Database.get_user_stats">
+      
+      
+      ¶
+    </a>
+  </div>
+  <div class="docstring functionBody">
+    
+    <div><p>Получает статистику пользователя.</p><table class="fieldTable"><tr class="fieldStart"><td class="fieldName" colspan="2">Parameters</td></tr><tr><td class="fieldArgContainer"><span class="fieldArg">user<wbr></wbr>_id:</span>int</td><td class="fieldArgDesc">ID пользователя</td></tr></table><table class="fieldTable"><tr class="fieldStart"><td class="fieldName" colspan="2">Returns</td></tr><tr><td class="fieldArgContainer">dict</td><td class="fieldArgDesc">Статистика пользователя</td></tr></table></div>
+  </div>
+</div><div class="basemethod">
+  
+  
+  <a name="database.Database.has_book">
+    
+  </a>
+  <a name="has_book">
+    
+  </a>
+  <div class="functionHeader">
+    
+    
+    <span class="py-keyword">def</span>&#160;<span class="py-defname">has_book</span><span class="function-signature">(<span class="rst-sig-param"><span class="rst-undocumented">self</span>, </span><span class="rst-sig-param">user_id, </span><span class="rst-sig-param">book_id</span>):</span>
+    
+    <a class="headerLink" href="#has_book" title="database.Database.has_book">
+      
+      
+      ¶
+    </a>
+  </div>
+  <div class="docstring functionBody">
+    
+    <div><p>Проверяет, есть ли у пользователя книга.</p><table class="fieldTable"><tr class="fieldStart"><td class="fieldName" colspan="2">Parameters</td></tr><tr><td class="fieldArgContainer"><span class="fieldArg">user<wbr></wbr>_id:</span>int</td><td class="fieldArgDesc">ID пользователя</td></tr><tr><td class="fieldArgContainer"><span class="fieldArg">book<wbr></wbr>_id:</span>int</td><td class="fieldArgDesc">ID книги</td></tr></table><table class="fieldTable"><tr class="fieldStart"><td class="fieldName" colspan="2">Returns</td></tr><tr><td class="fieldArgContainer">bool</td><td class="fieldArgDesc">True если книга есть, False если нет</td></tr></table></div>
+  </div>
+</div><div class="basemethod">
+  
+  
+  <a name="database.Database.init_db">
+    
+  </a>
+  <a name="init_db">
+    
+  </a>
+  <div class="functionHeader">
+    
+    
+    <span class="py-keyword">def</span>&#160;<span class="py-defname">init_db</span><span class="function-signature">(<span class="rst-sig-param"><span class="rst-undocumented">self</span></span>):</span>
+    
+    <a class="headerLink" href="#init_db" title="database.Database.init_db">
+      
+      
+      ¶
+    </a>
+  </div>
+  <div class="docstring functionBody">
+    
+    <div><p>Инициализирует базу данных, создает таблицы если они не существуют.
+Добавляет тестовые книги если база пустая.</p></div>
+  </div>
+</div><div class="basemethod">
+  
+  
+  <a name="database.Database.rate_book">
+    
+  </a>
+  <a name="rate_book">
+    
+  </a>
+  <div class="functionHeader">
+    
+    
+    <span class="py-keyword">def</span>&#160;<span class="py-defname">rate_book</span><span class="function-signature">(<span class="rst-sig-param"><span class="rst-undocumented">self</span>, </span><span class="rst-sig-param">user_id, </span><span class="rst-sig-param">book_id, </span><span class="rst-sig-param">rating</span>):</span>
+    
+    <a class="headerLink" href="#rate_book" title="database.Database.rate_book">
+      
+      
+      ¶
+    </a>
+  </div>
+  <div class="docstring functionBody">
+    
+    <div><p>Оценивает книгу пользователем.</p><table class="fieldTable"><tr class="fieldStart"><td class="fieldName" colspan="2">Parameters</td></tr><tr><td class="fieldArgContainer"><span class="fieldArg">user<wbr></wbr>_id:</span>int</td><td class="fieldArgDesc">ID пользователя</td></tr><tr><td class="fieldArgContainer"><span class="fieldArg">book<wbr></wbr>_id:</span>int</td><td class="fieldArgDesc">ID книги</td></tr><tr><td class="fieldArgContainer"><span class="fieldArg">rating:</span>int</td><td class="fieldArgDesc">Оценка от 1 до 5</td></tr></table><table class="fieldTable"><tr class="fieldStart"><td class="fieldName" colspan="2">Returns</td></tr><tr><td class="fieldArgContainer">bool</td><td class="fieldArgDesc">True если оценка сохранена, False если неверная оценка или запись не найдена</td></tr></table></div>
+  </div>
+</div><div class="basemethod">
+  
+  
+  <a name="database.Database.remove_user_book">
+    
+  </a>
+  <a name="remove_user_book">
+    
+  </a>
+  <div class="functionHeader">
+    
+    
+    <span class="py-keyword">def</span>&#160;<span class="py-defname">remove_user_book</span><span class="function-signature">(<span class="rst-sig-param"><span class="rst-undocumented">self</span>, </span><span class="rst-sig-param">user_id, </span><span class="rst-sig-param">book_id</span>):</span>
+    
+    <a class="headerLink" href="#remove_user_book" title="database.Database.remove_user_book">
+      
+      
+      ¶
+    </a>
+  </div>
+  <div class="docstring functionBody">
+    
+    <div><p>Удаляет книгу из коллекции пользователя.</p><table class="fieldTable"><tr class="fieldStart"><td class="fieldName" colspan="2">Parameters</td></tr><tr><td class="fieldArgContainer"><span class="fieldArg">user<wbr></wbr>_id:</span>int</td><td class="fieldArgDesc">ID пользователя</td></tr><tr><td class="fieldArgContainer"><span class="fieldArg">book<wbr></wbr>_id:</span>int</td><td class="fieldArgDesc">ID книги</td></tr></table><table class="fieldTable"><tr class="fieldStart"><td class="fieldName" colspan="2">Returns</td></tr><tr><td class="fieldArgContainer">bool</td><td class="fieldArgDesc">True если книга удалена, False если не найдена</td></tr></table></div>
+  </div>
+</div><div class="basemethod">
+  
+  
+  <a name="database.Database.search_books">
+    
+  </a>
+  <a name="search_books">
+    
+  </a>
+  <div class="functionHeader">
+    
+    
+    <span class="py-keyword">def</span>&#160;<span class="py-defname">search_books</span><span class="function-signature">(<span class="rst-sig-param"><span class="rst-undocumented">self</span>, </span><span class="rst-sig-param">query=<span class="rst-variable-quote">'</span><span class="rst-variable-string"></span><span class="rst-variable-quote">'</span>, </span><span class="rst-sig-param">genre=<span class="rst-variable-quote">'</span><span class="rst-variable-string"></span><span class="rst-variable-quote">'</span>, </span><span class="rst-sig-param">limit=10</span>):</span>
+    
+    <a class="headerLink" href="#search_books" title="database.Database.search_books">
+      
+      
+      ¶
+    </a>
+  </div>
+  <div class="docstring functionBody">
+    
+    <div><p>Ищет книги по заданным критериям.</p><table class="fieldTable"><tr class="fieldStart"><td class="fieldName" colspan="2">Parameters</td></tr><tr><td class="fieldArgContainer"><span class="fieldArg">query:</span>str</td><td class="fieldArgDesc">Текст для поиска в названии и авторе</td></tr><tr><td class="fieldArgContainer"><span class="fieldArg">genre:</span>str</td><td class="fieldArgDesc">Жанр для фильтрации</td></tr><tr><td class="fieldArgContainer"><span class="fieldArg">limit:</span>int</td><td class="fieldArgDesc">Максимальное количество результатов</td></tr></table><table class="fieldTable"><tr class="fieldStart"><td class="fieldName" colspan="2">Returns</td></tr><tr><td class="fieldArgContainer">list</td><td class="fieldArgDesc">Список словарей с книгами</td></tr></table></div>
+  </div>
+</div><div class="basemethod">
+  
+  
+  <a name="database.Database.search_books_by_text">
+    
+  </a>
+  <a name="search_books_by_text">
+    
+  </a>
+  <div class="functionHeader">
+    
+    
+    <span class="py-keyword">def</span>&#160;<span class="py-defname">search_books_by_text</span><span class="function-signature">(<span class="rst-sig-param"><span class="rst-undocumented">self</span>, </span><span class="rst-sig-param">query, </span><span class="rst-sig-param">limit=5</span>):</span>
+    
+    <a class="headerLink" href="#search_books_by_text" title="database.Database.search_books_by_text">
+      
+      
+      ¶
+    </a>
+  </div>
+  <div class="docstring functionBody">
+    
+    <div><p>Упрощенный поиск книг по тексту (из второго файла).</p><table class="fieldTable"><tr class="fieldStart"><td class="fieldName" colspan="2">Parameters</td></tr><tr><td class="fieldArgContainer"><span class="fieldArg">query:</span>str</td><td class="fieldArgDesc">Текст для поиска</td></tr><tr><td class="fieldArgContainer"><span class="fieldArg">limit:</span>int</td><td class="fieldArgDesc">Максимальное количество результатов</td></tr></table><table class="fieldTable"><tr class="fieldStart"><td class="fieldName" colspan="2">Returns</td></tr><tr><td class="fieldArgContainer">list</td><td class="fieldArgDesc">Список книг</td></tr></table></div>
+  </div>
+</div><div class="basemethod">
+  
+  
+  <a name="database.Database.update_book_status">
+    
+  </a>
+  <a name="update_book_status">
+    
+  </a>
+  <div class="functionHeader">
+    
+    
+    <span class="py-keyword">def</span>&#160;<span class="py-defname">update_book_status</span><span class="function-signature">(<span class="rst-sig-param"><span class="rst-undocumented">self</span>, </span><span class="rst-sig-param">user_id, </span><span class="rst-sig-param">book_id, </span><span class="rst-sig-param">status, </span><span class="rst-sig-param">current_page=0</span>):</span>
+    
+    <a class="headerLink" href="#update_book_status" title="database.Database.update_book_status">
+      
+      
+      ¶
+    </a>
+  </div>
+  <div class="docstring functionBody">
+    
+    <div><p>Обновляет статус книги у пользователя.</p><table class="fieldTable"><tr class="fieldStart"><td class="fieldName" colspan="2">Parameters</td></tr><tr><td class="fieldArgContainer"><span class="fieldArg">user<wbr></wbr>_id:</span>int</td><td class="fieldArgDesc">ID пользователя</td></tr><tr><td class="fieldArgContainer"><span class="fieldArg">book<wbr></wbr>_id:</span>int</td><td class="fieldArgDesc">ID книги</td></tr><tr><td class="fieldArgContainer"><span class="fieldArg">status:</span>str</td><td class="fieldArgDesc">Новый статус</td></tr><tr><td class="fieldArgContainer"><span class="fieldArg">current<wbr></wbr>_page:</span>int</td><td class="fieldArgDesc">Текущая страница</td></tr></table><table class="fieldTable"><tr class="fieldStart"><td class="fieldName" colspan="2">Returns</td></tr><tr><td class="fieldArgContainer">bool</td><td class="fieldArgDesc">True если обновлено, False если не найдено</td></tr></table></div>
+  </div>
+</div><div class="basemethod">
+  
+  
+  <a name="database.Database.update_progress">
+    
+  </a>
+  <a name="update_progress">
+    
+  </a>
+  <div class="functionHeader">
+    
+    
+    <span class="py-keyword">def</span>&#160;<span class="py-defname">update_progress</span><span class="function-signature">(<span class="rst-sig-param"><span class="rst-undocumented">self</span>, </span><span class="rst-sig-param">user_id, </span><span class="rst-sig-param">book_id, </span><span class="rst-sig-param">page</span>):</span>
+    
+    <a class="headerLink" href="#update_progress" title="database.Database.update_progress">
+      
+      
+      ¶
+    </a>
+  </div>
+  <div class="docstring functionBody">
+    
+    <div><p>Обновляет прогресс чтения книги.</p><table class="fieldTable"><tr class="fieldStart"><td class="fieldName" colspan="2">Parameters</td></tr><tr><td class="fieldArgContainer"><span class="fieldArg">user<wbr></wbr>_id:</span>int</td><td class="fieldArgDesc">ID пользователя</td></tr><tr><td class="fieldArgContainer"><span class="fieldArg">book<wbr></wbr>_id:</span>int</td><td class="fieldArgDesc">ID книги</td></tr><tr><td class="fieldArgContainer"><span class="fieldArg">page:</span>int</td><td class="fieldArgDesc">Текущая страница</td></tr></table><table class="fieldTable"><tr class="fieldStart"><td class="fieldName" colspan="2">Returns</td></tr><tr><td class="fieldArgContainer">bool</td><td class="fieldArgDesc">True если успешно, False если ошибка</td></tr></table></div>
+  </div>
+</div><div class="baseinstancevariable">
+  
+  
+  <a name="database.Database.db_path">
+    
+  </a>
+  <a name="db_path">
+    
+  </a>
+  <div class="functionHeader">
+    
+    <span class="py-defname">db_path</span> =
+    
+    <a class="headerLink" href="#db_path" title="database.Database.db_path">
+      
+      
+      ¶
+    </a>
+  </div>
+  <div class="functionBody">
+    
+    <div><p class="undocumented">Undocumented</p></div>
+    
+  </div>
+</div><div class="basemethod private">
+  
+  
+  <a name="database.Database._add_test_books">
+    
+  </a>
+  <a name="_add_test_books">
+    
+  </a>
+  <div class="functionHeader">
+    
+    
+    <span class="py-keyword">def</span>&#160;<span class="py-defname">_add_test_books</span><span class="function-signature">(<span class="rst-sig-param"><span class="rst-undocumented">self</span>, </span><span class="rst-sig-param">cursor</span>):</span>
+    
+    <a class="headerLink" href="#_add_test_books" title="database.Database._add_test_books">
+      
+      
+      ¶
+    </a>
+  </div>
+  <div class="docstring functionBody">
+    
+    <div><p>Добавляет тестовые книги в базу данных.</p><table class="fieldTable"><tr class="fieldStart"><td class="fieldName" colspan="2">Parameters</td></tr><tr><td class="fieldArgContainer"><span class="fieldArg">cursor:</span>sqlite3.Cursor</td><td class="fieldArgDesc">Курсор для выполнения SQL-запросов</td></tr></table></div>
+  </div>
+</div>
+        </div>
+      
+      </main>
+    </div>
+
+    <footer class="navbar navbar-default">
+
+  
+  <div class="container-fluid">
+    <a href="index.html">API Documentation</a> for NewBot,
+  generated by <a href="https://github.com/twisted/pydoctor/">pydoctor</a>
+    25.10.1 at 2025-12-18 15:05:48.
+  </div>
+
+  <!-- Search related scripts needs to be loaded at the end of HTML 
+    parsing not to introduce overhead and display HTML data asap -->
+  <script src="ajax.js" type="text/javascript"></script>
+  <script src="searchlib.js" type="text/javascript"></script>
+  <script src="search.js" type="text/javascript"></script>
+
+</footer>
+  
+    <script src="pydoctor.js" type="text/javascript"></script>
+
+  </body>
+</html>

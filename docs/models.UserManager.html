@@ -1,0 +1,949 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+          "DTD/xhtml1-strict.dtd">
+<html>
+  
+
+  <head>
+    
+    <title>models.UserManager</title>
+    <meta name="generator" content="pydoctor 25.10.1"> 
+        
+    </meta>
+    <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1 maximum-scale=1" />
+    <link rel="stylesheet" type="text/css" href="bootstrap.min.css" />
+    <link rel="stylesheet" type="text/css" href="apidocs.css" />
+    <link rel="stylesheet" type="text/css" href="extra.css" />
+    
+</head>
+
+  <body>
+
+    
+
+    <nav class="navbar navbar-default mainnavbar">
+      
+  
+  <div class="container-fluid">
+
+
+    <div class="navbar-header">
+      
+      <div class="navlinks">
+        <span class="navbar-brand">
+          NewBot <a href="index.html">API Documentation</a>
+        </span>
+
+        <a href="moduleIndex.html">
+          Modules
+        </a>
+
+        <a href="classIndex.html">
+          Classes
+        </a>
+
+        <a href="nameIndex.html">
+          Names
+        </a>
+
+        <div id="search-box-container">
+          <div class="input-group">
+            <input id="search-box" type="search" name="search-query" placeholder="Search..." aria-label="Search" minlength="2" class="form-control" autocomplete="off" />
+            
+            <span class="input-group-btn">
+              <a style="display: none;" class="btn btn-default" id="search-clear-button" title="Clear" onclick="clearSearch()"><img src="fonts/x-circle.svg" alt="Clear" /></a>
+              <a class="btn btn-default" id="apidocs-help-button" title="Help" href="apidocs-help.html"><img src="fonts/info.svg" alt="Help" /></a>
+            </span>
+          </div>
+        </div>
+
+      </div>
+
+      <div id="search-results-container" style="display: none;">
+        
+        <div id="search-buttons">
+          <span class="label label-default" id="search-docstrings-button">
+          <label class="checkbox-inline">
+            <input type="checkbox" id="toggle-search-in-docstrings-checkbox" value="false" onclick="toggleSearchInDocstrings()">
+              search in docstrings
+            </input>
+          </label>
+          </span>
+          
+        </div>
+        
+        <noscript>
+            <h1>Cannot search: JavaScript is not supported/enabled in your browser.</h1>
+        </noscript>
+
+        <div id="search-status"> </div>
+
+        <div class="warning" id="search-warn-box" style="display: none;">
+          <p class="rst-last"><span id="search-warn"></span></p>
+        </div>
+
+        <table id="search-results">
+          <!-- Filled dynamically by JS -->
+        </table>
+        
+        <div style="margin-top: 10px;">
+          <p>For more information on the search, visit the <a href="apidocs-help.html#rst-search">help page</a>.</p>
+        </div>
+      </div>
+
+    </div>
+
+
+  </div>
+</nav>
+    
+    <div class="container-fluid">
+
+      <!-- Side navigation -->
+      <div class="sidebarcontainer" style="display: none;">
+        
+        <div class="sidebar"><nav class="sidebar">
+  
+
+  <div>
+
+      <div class="thingTitle">
+        <span>Class</span>
+        <code class="thisobject"><a href="models.UserManager.html" class="internal-link" title="This class"><wbr></wbr>User<wbr></wbr>Manager</a></code> 
+      </div>
+      
+      <div>
+        
+
+        
+         
+
+        
+        
+
+        <div class="childrenKindTitle">Methods</div>
+        <ul>
+    
+    <li class="">
+        
+        
+        
+
+        
+            <div class="itemName"><code><a href="#__init__" class="internal-link" title="models.UserManager.__init__">__init__</a></code>
+            </div>
+        
+
+    </li><li class="">
+        
+        
+        
+
+        
+            <div class="itemName"><code><a href="#add_book" class="internal-link" title="models.UserManager.add_book">add<wbr></wbr>_book</a></code>
+            </div>
+        
+
+    </li><li class="">
+        
+        
+        
+
+        
+            <div class="itemName"><code><a href="#count_user_books" class="internal-link" title="models.UserManager.count_user_books">count<wbr></wbr>_user<wbr></wbr>_books</a></code>
+            </div>
+        
+
+    </li><li class="">
+        
+        
+        
+
+        
+            <div class="itemName"><code><a href="#get_book_info" class="internal-link" title="models.UserManager.get_book_info">get<wbr></wbr>_book<wbr></wbr>_info</a></code>
+            </div>
+        
+
+    </li><li class="">
+        
+        
+        
+
+        
+            <div class="itemName"><code><a href="#get_completed_books" class="internal-link" title="models.UserManager.get_completed_books">get<wbr></wbr>_completed<wbr></wbr>_books</a></code>
+            </div>
+        
+
+    </li><li class="">
+        
+        
+        
+
+        
+            <div class="itemName"><code><a href="#get_or_create_user" class="internal-link" title="models.UserManager.get_or_create_user">get<wbr></wbr>_or<wbr></wbr>_create<wbr></wbr>_user</a></code>
+            </div>
+        
+
+    </li><li class="">
+        
+        
+        
+
+        
+            <div class="itemName"><code><a href="#get_stats" class="internal-link" title="models.UserManager.get_stats">get<wbr></wbr>_stats</a></code>
+            </div>
+        
+
+    </li><li class="">
+        
+        
+        
+
+        
+            <div class="itemName"><code><a href="#get_user_books" class="internal-link" title="models.UserManager.get_user_books">get<wbr></wbr>_user<wbr></wbr>_books</a></code>
+            </div>
+        
+
+    </li><li class="">
+        
+        
+        
+
+        
+            <div class="itemName"><code><a href="#has_book" class="internal-link" title="models.UserManager.has_book">has<wbr></wbr>_book</a></code>
+            </div>
+        
+
+    </li><li class="">
+        
+        
+        
+
+        
+            <div class="itemName"><code><a href="#rate_book" class="internal-link" title="models.UserManager.rate_book">rate<wbr></wbr>_book</a></code>
+            </div>
+        
+
+    </li><li class="">
+        
+        
+        
+
+        
+            <div class="itemName"><code><a href="#remove_book" class="internal-link" title="models.UserManager.remove_book">remove<wbr></wbr>_book</a></code>
+            </div>
+        
+
+    </li><li class="">
+        
+        
+        
+
+        
+            <div class="itemName"><code><a href="#update_book_status" class="internal-link" title="models.UserManager.update_book_status">update<wbr></wbr>_book<wbr></wbr>_status</a></code>
+            </div>
+        
+
+    </li><li class="">
+        
+        
+        
+
+        
+            <div class="itemName"><code><a href="#update_progress" class="internal-link" title="models.UserManager.update_progress">update<wbr></wbr>_progress</a></code>
+            </div>
+        
+
+    </li>
+</ul> 
+
+        
+         
+
+        <div class="childrenKindTitle">Attributes</div>
+        <ul>
+    
+    <li class="">
+        
+        
+        
+
+        
+            <div class="itemName"><code><a href="#db" class="internal-link" title="models.UserManager.db">db</a></code>
+            </div>
+        
+
+    </li>
+</ul> 
+
+        
+         
+        
+      </div>
+  </div><div>
+
+      <div class="thingTitle">
+        <span>Module</span>
+        <code><a href="models.html" class="internal-link" title="The parent of this class">models</a></code> 
+      </div>
+      
+      <div>
+        
+
+        
+         
+
+        <div class="childrenKindTitle">Classes</div>
+        <ul>
+    
+    <li class="">
+        
+        
+        
+
+        
+            <div class="itemName"><code><a href="models.Book.html" class="internal-link" title="models.Book"><wbr></wbr>Book</a></code>
+            </div>
+        
+
+    </li><li class="">
+        
+        
+        
+
+        
+            <div class="itemName"><code><a href="models.BookManager.html" class="internal-link" title="models.BookManager"><wbr></wbr>Book<wbr></wbr>Manager</a></code>
+            </div>
+        
+
+    </li><li class="">
+        
+        
+        
+
+        
+            <div class="itemName"><code><a href="models.UserBook.html" class="internal-link" title="models.UserBook"><wbr></wbr>User<wbr></wbr>Book</a></code>
+            </div>
+        
+
+    </li><li class=" thisobject">
+        
+        
+        
+
+        
+            <div class="itemName"><code><a href="models.UserManager.html" class="internal-link" title="models.UserManager"><wbr></wbr>User<wbr></wbr>Manager</a></code>
+            </div>
+        
+
+    </li>
+</ul>
+
+        
+         
+
+        
+         
+
+        
+         
+
+        
+         
+        
+      </div>
+  </div>
+
+</nav>
+        </div>
+        <div id="collapse-sidebar">
+          <a class="btn btn-link" onclick="toggleSideBarCollapse()" title="Toggle Sidebar Collapse">
+          </a>
+        </div> 
+        <script src="sidebartoggle.js" type="text/javascript"></script>
+       
+      </div>
+
+      <main class="">
+        
+
+        
+
+        <div class="page-header">
+          <h1 class="class"><code><code><a href="models.html" class="internal-link">models</a></code><wbr></wbr>.<code><a href="models.UserManager.html" class="internal-link" title="models.UserManager">UserManager</a></code></code></h1>
+          <div id="show-private">
+            <button class="btn btn-link" onclick="togglePrivate()">Toggle Private API</button>
+          </div>
+        </div>
+
+        <div class="categoryHeader">
+          class documentation
+        </div>
+
+        <div class="extrasDocstring">
+          <p class="class-signature"><code><span class="py-keyword">class</span> <span class="py-defname">UserManager</span>:</code></p><p>Constructor: <code><a href="#__init__" class="internal-link" title="models.UserManager.__init__">UserManager(db)</a></code></p><p><a href="classIndex.html#models.UserManager">View In Hierarchy</a></p>
+        </div>
+
+        <div class="moduleDocstring">
+          <div><p>Менеджер для работы с пользователями и их книгами.</p></div>
+        </div>
+
+        <div id="split-tables">
+          <table class="children sortable" id="id7">
+  
+  
+  <tr class="method">
+    
+    <td>Method</td>
+    <td><code><a href="#__init__" class="internal-link" title="models.UserManager.__init__">__init__</a></code></td>
+    <td>Инициализирует менеджер пользователей.</td>
+  </tr><tr class="method">
+    
+    <td>Method</td>
+    <td><code><a href="#add_book" class="internal-link" title="models.UserManager.add_book">add<wbr></wbr>_book</a></code></td>
+    <td>Добавляет книгу в коллекцию пользователя.</td>
+  </tr><tr class="method">
+    
+    <td>Method</td>
+    <td><code><a href="#count_user_books" class="internal-link" title="models.UserManager.count_user_books">count<wbr></wbr>_user<wbr></wbr>_books</a></code></td>
+    <td>Подсчитывает общее количество книг в коллекции пользователя.</td>
+  </tr><tr class="method">
+    
+    <td>Method</td>
+    <td><code><a href="#get_book_info" class="internal-link" title="models.UserManager.get_book_info">get<wbr></wbr>_book<wbr></wbr>_info</a></code></td>
+    <td>Получает информацию о конкретной книге пользователя.</td>
+  </tr><tr class="method">
+    
+    <td>Method</td>
+    <td><code><a href="#get_completed_books" class="internal-link" title="models.UserManager.get_completed_books">get<wbr></wbr>_completed<wbr></wbr>_books</a></code></td>
+    <td>Получает список завершенных (прочитанных) книг пользователя.</td>
+  </tr><tr class="method">
+    
+    <td>Method</td>
+    <td><code><a href="#get_or_create_user" class="internal-link" title="models.UserManager.get_or_create_user">get<wbr></wbr>_or<wbr></wbr>_create<wbr></wbr>_user</a></code></td>
+    <td>Получает существующего пользователя или создает нового.</td>
+  </tr><tr class="method">
+    
+    <td>Method</td>
+    <td><code><a href="#get_stats" class="internal-link" title="models.UserManager.get_stats">get<wbr></wbr>_stats</a></code></td>
+    <td>Получает статистику чтения для указанного пользователя.</td>
+  </tr><tr class="method">
+    
+    <td>Method</td>
+    <td><code><a href="#get_user_books" class="internal-link" title="models.UserManager.get_user_books">get<wbr></wbr>_user<wbr></wbr>_books</a></code></td>
+    <td>Получает книги пользователя.</td>
+  </tr><tr class="method">
+    
+    <td>Method</td>
+    <td><code><a href="#has_book" class="internal-link" title="models.UserManager.has_book">has<wbr></wbr>_book</a></code></td>
+    <td>Проверяет наличие книги в коллекции пользователя.</td>
+  </tr><tr class="method">
+    
+    <td>Method</td>
+    <td><code><a href="#rate_book" class="internal-link" title="models.UserManager.rate_book">rate<wbr></wbr>_book</a></code></td>
+    <td>Устанавливает оценку книги пользователем.</td>
+  </tr><tr class="method">
+    
+    <td>Method</td>
+    <td><code><a href="#remove_book" class="internal-link" title="models.UserManager.remove_book">remove<wbr></wbr>_book</a></code></td>
+    <td>Удаляет книгу из коллекции пользователя.</td>
+  </tr><tr class="method">
+    
+    <td>Method</td>
+    <td><code><a href="#update_book_status" class="internal-link" title="models.UserManager.update_book_status">update<wbr></wbr>_book<wbr></wbr>_status</a></code></td>
+    <td>Обновляет статус чтения книги пользователем.</td>
+  </tr><tr class="method">
+    
+    <td>Method</td>
+    <td><code><a href="#update_progress" class="internal-link" title="models.UserManager.update_progress">update<wbr></wbr>_progress</a></code></td>
+    <td>Обновляет прогресс чтения книги.</td>
+  </tr><tr class="instancevariable">
+    
+    <td>Instance Variable</td>
+    <td><code><a href="#db" class="internal-link" title="models.UserManager.db">db</a></code></td>
+    <td><span class="rst-undocumented">Undocumented</span></td>
+  </tr>
+</table>
+          
+
+            
+        </div>
+
+        <div id="child-list">
+          <div class="basemethod">
+  
+  
+  <a name="models.UserManager.__init__">
+    
+  </a>
+  <a name="__init__">
+    
+  </a>
+  <div class="functionHeader">
+    
+    
+    <span class="py-keyword">def</span>&#160;<span class="py-defname">__init__</span><span class="function-signature">(<span class="rst-sig-param"><span class="rst-undocumented">self</span>, </span><span class="rst-sig-param">db</span>):</span>
+    
+    <a class="headerLink" href="#__init__" title="models.UserManager.__init__">
+      
+      
+      ¶
+    </a>
+  </div>
+  <div class="docstring functionBody">
+    
+    <div><p>Инициализирует менеджер пользователей.</p></div>
+  </div>
+</div><div class="basemethod">
+  
+  
+  <a name="models.UserManager.add_book">
+    
+  </a>
+  <a name="add_book">
+    
+  </a>
+  <div class="functionHeader">
+    
+    
+    <span class="py-keyword">def</span>&#160;<span class="py-defname">add_book</span><span class="function-signature">(<span class="rst-sig-param"><span class="rst-undocumented">self</span>, </span><span class="rst-sig-param">user_id, </span><span class="rst-sig-param">book_id, </span><span class="rst-sig-param">status=<span class="rst-variable-quote">'</span><span class="rst-variable-string">planned</span><span class="rst-variable-quote">'</span></span>):</span>
+    
+    <a class="headerLink" href="#add_book" title="models.UserManager.add_book">
+      
+      
+      ¶
+    </a>
+  </div>
+  <div class="docstring functionBody">
+    
+    <div><p>Добавляет книгу в коллекцию пользователя.</p>
+<dl class="rst-docutils">
+<dt>Args:</dt>
+<dd>user_id: Уникальный идентификатор пользователя
+book_id: Уникальный идентификатор книги
+status: Статус чтения книги: "planned", "reading", "completed", "dropped"</dd>
+<dt>Returns:</dt>
+<dd>bool: True если книга успешно добавлена, False если произошла ошибка</dd>
+<dt>Raises:</dt>
+<dd>ValueError: Если указан недопустимый статус</dd>
+</dl>
+</div>
+  </div>
+</div><div class="basemethod">
+  
+  
+  <a name="models.UserManager.count_user_books">
+    
+  </a>
+  <a name="count_user_books">
+    
+  </a>
+  <div class="functionHeader">
+    
+    
+    <span class="py-keyword">def</span>&#160;<span class="py-defname">count_user_books</span><span class="function-signature">(<span class="rst-sig-param"><span class="rst-undocumented">self</span>, </span><span class="rst-sig-param">user_id</span>):</span>
+    
+    <a class="headerLink" href="#count_user_books" title="models.UserManager.count_user_books">
+      
+      
+      ¶
+    </a>
+  </div>
+  <div class="docstring functionBody">
+    
+    <div><p>Подсчитывает общее количество книг в коллекции пользователя.</p>
+<dl class="rst-docutils">
+<dt>Args:</dt>
+<dd>user_id: Уникальный идентификатор пользователя</dd>
+<dt>Returns:</dt>
+<dd>int: Количество книг в коллекции пользователя или 0 при ошибке</dd>
+</dl>
+</div>
+  </div>
+</div><div class="basemethod">
+  
+  
+  <a name="models.UserManager.get_book_info">
+    
+  </a>
+  <a name="get_book_info">
+    
+  </a>
+  <div class="functionHeader">
+    
+    
+    <span class="py-keyword">def</span>&#160;<span class="py-defname">get_book_info</span><span class="function-signature">(<span class="rst-sig-param"><span class="rst-undocumented">self</span>, </span><span class="rst-sig-param">user_id, </span><span class="rst-sig-param">book_id</span>):</span>
+    
+    <a class="headerLink" href="#get_book_info" title="models.UserManager.get_book_info">
+      
+      
+      ¶
+    </a>
+  </div>
+  <div class="docstring functionBody">
+    
+    <div><p>Получает информацию о конкретной книге пользователя.</p>
+<dl class="rst-docutils">
+<dt>Args:</dt>
+<dd>user_id: Идентификатор пользователя в системе
+book_id: Идентификатор книги в каталоге</dd>
+<dt>Returns:</dt>
+<dd>Optional[UserBook]: Объект книги пользователя если найдена,
+None если книга отсутствует в коллекции пользователя</dd>
+</dl>
+</div>
+  </div>
+</div><div class="basemethod">
+  
+  
+  <a name="models.UserManager.get_completed_books">
+    
+  </a>
+  <a name="get_completed_books">
+    
+  </a>
+  <div class="functionHeader">
+    
+    
+    <span class="py-keyword">def</span>&#160;<span class="py-defname">get_completed_books</span><span class="function-signature">(<span class="rst-sig-param"><span class="rst-undocumented">self</span>, </span><span class="rst-sig-param">user_id</span>):</span>
+    
+    <a class="headerLink" href="#get_completed_books" title="models.UserManager.get_completed_books">
+      
+      
+      ¶
+    </a>
+  </div>
+  <div class="docstring functionBody">
+    
+    <div><p>Получает список завершенных (прочитанных) книг пользователя.</p>
+<dl class="rst-docutils">
+<dt>Args:</dt>
+<dd>user_id: Уникальный идентификатор пользователя</dd>
+<dt>Returns:</dt>
+<dd>List[UserBook]: Список объектов UserBook со статусом 'completed'</dd>
+</dl>
+</div>
+  </div>
+</div><div class="basemethod">
+  
+  
+  <a name="models.UserManager.get_or_create_user">
+    
+  </a>
+  <a name="get_or_create_user">
+    
+  </a>
+  <div class="functionHeader">
+    
+    
+    <span class="py-keyword">def</span>&#160;<span class="py-defname">get_or_create_user</span><span class="function-signature">(<span class="rst-sig-param"><span class="rst-undocumented">self</span>, </span><span class="rst-sig-param">telegram_id, </span><span class="rst-sig-param">username=<span class="rst-variable-quote">'</span><span class="rst-variable-string"></span><span class="rst-variable-quote">'</span>, </span><span class="rst-sig-param">first_name=<span class="rst-variable-quote">'</span><span class="rst-variable-string"></span><span class="rst-variable-quote">'</span>, </span><span class="rst-sig-param">last_name=<span class="rst-variable-quote">'</span><span class="rst-variable-string"></span><span class="rst-variable-quote">'</span></span>):</span>
+    
+    <a class="headerLink" href="#get_or_create_user" title="models.UserManager.get_or_create_user">
+      
+      
+      ¶
+    </a>
+  </div>
+  <div class="docstring functionBody">
+    
+    <div><p>Получает существующего пользователя или создает нового.</p>
+<dl class="rst-docutils">
+<dt>Args:</dt>
+<dd>telegram_id: Уникальный идентификатор пользователя в Telegram
+username: Имя пользователя в Telegram (опционально)
+first_name: Имя пользователя (опционально)
+last_name: Фамилия пользователя (опционально)</dd>
+<dt>Returns:</dt>
+<dd>int: Идентификатор пользователя в системе (существующего или нового)</dd>
+</dl>
+</div>
+  </div>
+</div><div class="basemethod">
+  
+  
+  <a name="models.UserManager.get_stats">
+    
+  </a>
+  <a name="get_stats">
+    
+  </a>
+  <div class="functionHeader">
+    
+    
+    <span class="py-keyword">def</span>&#160;<span class="py-defname">get_stats</span><span class="function-signature">(<span class="rst-sig-param"><span class="rst-undocumented">self</span>, </span><span class="rst-sig-param">user_id</span>):</span>
+    
+    <a class="headerLink" href="#get_stats" title="models.UserManager.get_stats">
+      
+      
+      ¶
+    </a>
+  </div>
+  <div class="docstring functionBody">
+    
+    <div><p>Получает статистику чтения для указанного пользователя.</p>
+<dl class="rst-docutils">
+<dt>Args:</dt>
+<dd>user_id: Уникальный идентификатор пользователя</dd>
+<dt>Returns:</dt>
+<dd>Dict[str, Any]: Словарь со статистическими данными пользователя или пустой словарь в случае ошибки</dd>
+</dl>
+</div>
+  </div>
+</div><div class="basemethod">
+  
+  
+  <a name="models.UserManager.get_user_books">
+    
+  </a>
+  <a name="get_user_books">
+    
+  </a>
+  <div class="functionHeader">
+    
+    
+    <span class="py-keyword">def</span>&#160;<span class="py-defname">get_user_books</span><span class="function-signature">(<span class="rst-sig-param"><span class="rst-undocumented">self</span>, </span><span class="rst-sig-param">user_id, </span><span class="rst-sig-param">status=None</span>):</span>
+    
+    <a class="headerLink" href="#get_user_books" title="models.UserManager.get_user_books">
+      
+      
+      ¶
+    </a>
+  </div>
+  <div class="docstring functionBody">
+    
+    <div><p>Получает книги пользователя.</p>
+<dl class="rst-docutils">
+<dt>Args:</dt>
+<dd>user_id: Идентификатор пользователя
+status: Фильтр по статусу чтения</dd>
+<dt>Returns:</dt>
+<dd>List[UserBook]: Список книг пользователя</dd>
+</dl>
+</div>
+  </div>
+</div><div class="basemethod">
+  
+  
+  <a name="models.UserManager.has_book">
+    
+  </a>
+  <a name="has_book">
+    
+  </a>
+  <div class="functionHeader">
+    
+    
+    <span class="py-keyword">def</span>&#160;<span class="py-defname">has_book</span><span class="function-signature">(<span class="rst-sig-param"><span class="rst-undocumented">self</span>, </span><span class="rst-sig-param">user_id, </span><span class="rst-sig-param">book_id</span>):</span>
+    
+    <a class="headerLink" href="#has_book" title="models.UserManager.has_book">
+      
+      
+      ¶
+    </a>
+  </div>
+  <div class="docstring functionBody">
+    
+    <div><p>Проверяет наличие книги в коллекции пользователя.</p>
+<dl class="rst-docutils">
+<dt>Args:</dt>
+<dd>user_id: Идентификатор пользователя в системе
+book_id: Идентификатор книги в каталоге</dd>
+<dt>Returns:</dt>
+<dd><dl class="rst-docutils rst-first rst-last">
+<dt>bool: True если книга есть в коллекции пользователя,</dt>
+<dd>False если книги нет или произошла ошибка</dd>
+</dl>
+</dd>
+</dl>
+</div>
+  </div>
+</div><div class="basemethod">
+  
+  
+  <a name="models.UserManager.rate_book">
+    
+  </a>
+  <a name="rate_book">
+    
+  </a>
+  <div class="functionHeader">
+    
+    
+    <span class="py-keyword">def</span>&#160;<span class="py-defname">rate_book</span><span class="function-signature">(<span class="rst-sig-param"><span class="rst-undocumented">self</span>, </span><span class="rst-sig-param">user_id, </span><span class="rst-sig-param">book_id, </span><span class="rst-sig-param">rating</span>):</span>
+    
+    <a class="headerLink" href="#rate_book" title="models.UserManager.rate_book">
+      
+      
+      ¶
+    </a>
+  </div>
+  <div class="docstring functionBody">
+    
+    <div><p>Устанавливает оценку книги пользователем.</p>
+<dl class="rst-docutils">
+<dt>Args:</dt>
+<dd>user_id: Уникальный идентификатор пользователя
+book_id: Уникальный идентификатор книги
+rating: Оценка книги (целое число от 1 до 5 включительно)</dd>
+<dt>Returns:</dt>
+<dd>bool: True если оценка успешно сохранена, False в случае ошибки</dd>
+<dt>Raises:</dt>
+<dd>ValueError: Если оценка выходит за допустимый диапазон (1-5)</dd>
+</dl>
+</div>
+  </div>
+</div><div class="basemethod">
+  
+  
+  <a name="models.UserManager.remove_book">
+    
+  </a>
+  <a name="remove_book">
+    
+  </a>
+  <div class="functionHeader">
+    
+    
+    <span class="py-keyword">def</span>&#160;<span class="py-defname">remove_book</span><span class="function-signature">(<span class="rst-sig-param"><span class="rst-undocumented">self</span>, </span><span class="rst-sig-param">user_id, </span><span class="rst-sig-param">book_id</span>):</span>
+    
+    <a class="headerLink" href="#remove_book" title="models.UserManager.remove_book">
+      
+      
+      ¶
+    </a>
+  </div>
+  <div class="docstring functionBody">
+    
+    <div><p>Удаляет книгу из коллекции пользователя.</p>
+<dl class="rst-docutils">
+<dt>Args:</dt>
+<dd>user_id: Уникальный идентификатор пользователя
+book_id: Уникальный идентификатор книги для удаления</dd>
+<dt>Returns:</dt>
+<dd>bool: True если книга успешно удалена, False если произошла ошибка</dd>
+</dl>
+</div>
+  </div>
+</div><div class="basemethod">
+  
+  
+  <a name="models.UserManager.update_book_status">
+    
+  </a>
+  <a name="update_book_status">
+    
+  </a>
+  <div class="functionHeader">
+    
+    
+    <span class="py-keyword">def</span>&#160;<span class="py-defname">update_book_status</span><span class="function-signature">(<span class="rst-sig-param"><span class="rst-undocumented">self</span>, </span><span class="rst-sig-param">user_id, </span><span class="rst-sig-param">book_id, </span><span class="rst-sig-param">status, </span><span class="rst-sig-param">current_page=0</span>):</span>
+    
+    <a class="headerLink" href="#update_book_status" title="models.UserManager.update_book_status">
+      
+      
+      ¶
+    </a>
+  </div>
+  <div class="docstring functionBody">
+    
+    <div><p>Обновляет статус чтения книги пользователем.</p>
+<dl class="rst-docutils">
+<dt>Args:</dt>
+<dd>user_id: Уникальный идентификатор пользователя
+book_id: Уникальный идентификатор книги
+status: Новый статус чтения: "planned", "reading", "completed", "dropped"
+current_page: Текущая страница (по умолчанию 0)</dd>
+<dt>Returns:</dt>
+<dd>bool: True если статус успешно обновлен, False если произошла ошибка</dd>
+<dt>Raises:</dt>
+<dd>ValueError: Если указан недопустимый статус</dd>
+</dl>
+</div>
+  </div>
+</div><div class="basemethod">
+  
+  
+  <a name="models.UserManager.update_progress">
+    
+  </a>
+  <a name="update_progress">
+    
+  </a>
+  <div class="functionHeader">
+    
+    
+    <span class="py-keyword">def</span>&#160;<span class="py-defname">update_progress</span><span class="function-signature">(<span class="rst-sig-param"><span class="rst-undocumented">self</span>, </span><span class="rst-sig-param">user_id, </span><span class="rst-sig-param">book_id, </span><span class="rst-sig-param">current_page</span>):</span>
+    
+    <a class="headerLink" href="#update_progress" title="models.UserManager.update_progress">
+      
+      
+      ¶
+    </a>
+  </div>
+  <div class="docstring functionBody">
+    
+    <div><p>Обновляет прогресс чтения книги.</p>
+<dl class="rst-docutils">
+<dt>Args:</dt>
+<dd>user_id: ID пользователя
+book_id: ID книги
+current_page: Текущая страница</dd>
+<dt>Returns:</dt>
+<dd>bool: True если успешно, False при ошибке</dd>
+<dt>Raises:</dt>
+<dd>ValueError: Если current_page отрицательное</dd>
+</dl>
+</div>
+  </div>
+</div><div class="baseinstancevariable">
+  
+  
+  <a name="models.UserManager.db">
+    
+  </a>
+  <a name="db">
+    
+  </a>
+  <div class="functionHeader">
+    
+    <span class="py-defname">db</span> =
+    
+    <a class="headerLink" href="#db" title="models.UserManager.db">
+      
+      
+      ¶
+    </a>
+  </div>
+  <div class="functionBody">
+    
+    <div><p class="undocumented">Undocumented</p></div>
+    
+  </div>
+</div>
+        </div>
+      
+      </main>
+    </div>
+
+    <footer class="navbar navbar-default">
+
+  
+  <div class="container-fluid">
+    <a href="index.html">API Documentation</a> for NewBot,
+  generated by <a href="https://github.com/twisted/pydoctor/">pydoctor</a>
+    25.10.1 at 2025-12-18 15:05:48.
+  </div>
+
+  <!-- Search related scripts needs to be loaded at the end of HTML 
+    parsing not to introduce overhead and display HTML data asap -->
+  <script src="ajax.js" type="text/javascript"></script>
+  <script src="searchlib.js" type="text/javascript"></script>
+  <script src="search.js" type="text/javascript"></script>
+
+</footer>
+  
+    <script src="pydoctor.js" type="text/javascript"></script>
+
+  </body>
+</html>
