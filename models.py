@@ -13,27 +13,13 @@ class Book:
     def __init__(self, data):
         """
         Инициализирует объект книги.
-        Args:
-            data: Словарь с данными книги, содержащий ключи:
-            - id: Уникальный идентификатор (опционально)
-            - title: Название книги
-            - author: Автор книги
-            - total_pages: Количество страниц
-            - genre: Жанр книги
-            - description: Описание книги
-
-        Raises:
-            ValueError: Если произошла ошибка при создании объекта
         """
-        try:
-            self.id = data.get('id')
-            self.title = data.get('title', 'Без названия')
-            self.author = data.get('author', 'Неизвестный автор')
-            self.total_pages = data.get('total_pages', 0)
-            self.genre = data.get('genre', 'Не указан')
-            self.description = data.get('description', '')
-        except Exception as e:
-            raise ValueError(f"Ошибка создания книги: {e}")
+        self.id = data.get('id')
+        self.title = data.get('title', 'Без названия')
+        self.author = data.get('author', 'Неизвестный автор')
+        self.total_pages = data.get('total_pages', 0)
+        self.genre = data.get('genre', 'Не указан')
+        self.description = data.get('description', '')
 
     def get_info(self):
         """
@@ -55,30 +41,6 @@ class Book:
             info += f"\n📝 {self.description[:60]}..."
         return info
 
-    def get_short(self):
-        """
-        Возвращает сокращенное название книги.
-
-        Returns:
-            str: Сокращенное название (первые 20 символов с ...),
-                если название длиннее 20 символов, иначе полное название
-        """
-        if len(self.title) > 20:
-            short_title = self.title[:20]
-            return f"{short_title}..."
-        return self.title
-
-    def get_full_description(self):
-        """
-        Возвращает полное описание книги.
-
-        Returns:
-            str: Полное описание книги или сообщение об отсутствии описания
-        """
-        if self.description:
-            return self.description
-        return "Описание отсутствует"
-
 
 class UserBook:
     """
@@ -99,26 +61,17 @@ class UserBook:
     def __init__(self, data):
         """
         Инициализирует объект книги пользователя.
-
-        Args:
-            data: Словарь с данными книги пользователя
-
-        Raises:
-            ValueError: Если произошла ошибка при создании объекта
         """
-        try:
-            self.id = data.get('id')
-            self.user_id = data.get('user_id')
-            self.book_id = data.get('book_id')
-            self.status = data.get('status', 'planned')
-            self.current_page = data.get('current_page', 0)
-            self.rating = data.get('rating')
-            self.title = data.get('title', '')
-            self.author = data.get('author', '')
-            self.total_pages = data.get('total_pages', 0)
-            self.genre = data.get('genre', '')
-        except Exception as e:
-            raise ValueError(f"Ошибка создания UserBook: {e}")
+        self.id = data.get('id')
+        self.user_id = data.get('user_id')
+        self.book_id = data.get('book_id')
+        self.status = data.get('status', 'planned')
+        self.current_page = data.get('current_page', 0)
+        self.rating = data.get('rating')
+        self.title = data.get('title', '')
+        self.author = data.get('author', '')
+        self.total_pages = data.get('total_pages', 0)
+        self.genre = data.get('genre', '')
 
     def get_progress(self):
         """
@@ -135,7 +88,7 @@ class UserBook:
                 percent = (self.current_page / self.total_pages) * 100
                 return min(100, percent)
             return 0
-        except Exception:
+        except ZeroDivisionError:
             return 0
 
     def get_info(self):
@@ -143,8 +96,7 @@ class UserBook:
         Возвращает информацию о книге пользователя.
 
         Returns:
-            str: Форматированная строка с информацией о статусе,
-                         прогрессе и оценке книги
+            str: Форматированная строка с информацией о статусе, прогрессе и оценке книги
         """
         try:
             status_names = {
@@ -166,10 +118,9 @@ class UserBook:
         except Exception as e:
             return f"Ошибка получения информации: {e}"
 
-    def is_completed(self):
+    def is_completed(self) -> bool:
         """
         Проверяет, завершено ли чтение книги.
-
         Returns:
             bool: True если статус 'completed', иначе False
         """
@@ -183,17 +134,8 @@ class BookManager:
     def __init__(self, db):
         """
         Инициализирует менеджер книг.
-
-        Args:
-            db: Объект базы данных для работы с книгами
-
-        Raises:
-            ValueError: Если произошла ошибка инициализации
         """
-        try:
-            self.db = db
-        except Exception as e:
-            raise ValueError(f"Ошибка инициализации BookManager: {e}")
+        self.db = db
 
     def get_book(self, book_id):
         """
@@ -203,7 +145,7 @@ class BookManager:
             book_id: Идентификатор книги
 
         Returns:
-            Optional[Book]: Объект книги или None если не найдена
+            Optional[Book]: Объект книги или None если книга не найдена
         """
         try:
             data = self.db.get_book(book_id)
@@ -232,7 +174,18 @@ class BookManager:
             return []
 
     def get_top_books(self, criteria="rating", genre="", author="", limit=5):
+        """
+        Получает список лучших книг по заданным критериям.
 
+        Args:
+            criteria: Критерий сортировки
+            genre: Фильтр по жанру книги (если пустая строка - все жанры)
+            author: Фильтр по автору (если пустая строка - все авторы)
+            limit: Максимальное количество возвращаемых книг
+
+        Returns:
+            List[Book]: Список объектов Book, отсортированных по указанному критерию
+        """
         try:
             data = self.db.get_top_books(criteria, genre, author, limit)
             return [Book(item) for item in data]
@@ -241,19 +194,13 @@ class BookManager:
             return []
 
     def get_all_genres(self):
-        try:
-            return self.db.get_all_genres()
-        except Exception as e:
-            print(f"Ошибка получения жанров: {e}")
-            return []
+        """
+        Получает список всех доступных жанров книг в библиотеке.
 
-    def count_books(self):
-        try:
-            books = self.search_books("", "", 1000)
-            return len(books)
-        except Exception as e:
-            print(f"Ошибка подсчета книг: {e}")
-            return 0
+        Returns:
+            List[str]: Список уникальных жанров книг
+        """
+        return self.db.get_all_genres()
 
 
 class UserManager:
@@ -263,34 +210,59 @@ class UserManager:
     def __init__(self, db):
         """
         Инициализирует менеджер пользователей.
-
-        Args:
-            db: Объект базы данных для работы с пользователями
-
-        Raises:
-            ValueError: Если произошла ошибка инициализации
         """
-        try:
-            self.db = db
-        except Exception as e:
-            raise ValueError(f"Ошибка инициализации UserManager: {e}")
+        self.db = db
 
     def get_or_create_user(self, telegram_id, username="", first_name="", last_name=""):
+        """
+        Получает существующего пользователя или создает нового.
 
-        try:
-            return self.db.get_or_create_user(telegram_id, username, first_name, last_name)
-        except Exception as e:
-            print(f"Ошибка создания пользователя: {e}")
-            return None
+        Args:
+            telegram_id: Уникальный идентификатор пользователя в Telegram
+            username: Имя пользователя в Telegram (опционально)
+            first_name: Имя пользователя (опционально)
+            last_name: Фамилия пользователя (опционально)
+
+        Returns:
+            int: Идентификатор пользователя в системе (существующего или нового)
+        """
+        return self.db.get_or_create_user(telegram_id, username, first_name, last_name)
 
     def add_book(self, user_id, book_id, status="planned"):
+        """
+        Добавляет книгу в коллекцию пользователя.
+
+        Args:
+            user_id: Уникальный идентификатор пользователя
+            book_id: Уникальный идентификатор книги
+            status: Статус чтения книги: "planned", "reading", "completed", "dropped"
+
+        Returns:
+            bool: True если книга успешно добавлена, False если произошла ошибка
+
+        Raises:
+            ValueError: Если указан недопустимый статус
+        """
         try:
+            allowed_status = ["planned", "reading", "completed", "dropped"]
+            if status not in allowed_status:
+                raise ValueError
             return self.db.add_user_book(user_id, book_id, status)
         except Exception as e:
             print(f"Ошибка добавления книги: {e}")
             return False
 
     def remove_book(self, user_id, book_id):
+        """
+        Удаляет книгу из коллекции пользователя.
+
+        Args:
+            user_id: Уникальный идентификатор пользователя
+            book_id: Уникальный идентификатор книги для удаления
+
+        Returns:
+            bool: True если книга успешно удалена, False если произошла ошибка
+        """
         try:
             return self.db.remove_user_book(user_id, book_id)
         except Exception as e:
@@ -298,23 +270,46 @@ class UserManager:
             return False
 
     def update_book_status(self, user_id, book_id, status, current_page=0):
+        """
+        Обновляет статус чтения книги пользователем.
+
+        Args:
+            user_id: Уникальный идентификатор пользователя
+            book_id: Уникальный идентификатор книги
+            status: Новый статус чтения: "planned", "reading", "completed", "dropped"
+            current_page: Текущая страница (по умолчанию 0)
+
+        Returns:
+            bool: True если статус успешно обновлен, False если произошла ошибка
+
+        Raises:
+            ValueError: Если указан недопустимый статус
+        """
         try:
+            allowed_status = ["planned", "reading", "completed", "dropped"]
+            if status not in allowed_status:
+                raise ValueError
+            if current_page < 0:
+                raise ValueError
             return self.db.update_book_status(user_id, book_id, status, current_page)
+        except ValueError as ve:
+            print(f"Ошибка валидации: {ve}")
+            return False
         except Exception as e:
             print(f"Ошибка обновления статуса: {e}")
             return False
 
-    def rate_book(self, user_id, book_id, rating):
-        try:
-            if rating < 1 or rating > 5:
-                print("Ошибка: рейтинг должен быть от 1 до 5")
-                return False
-            return self.db.rate_book(user_id, book_id, rating)
-        except Exception as e:
-            print(f"Ошибка оценки книги: {e}")
-            return False
-
     def get_user_books(self, user_id, status=None):
+        """
+        Получает книги пользователя.
+
+        Args:
+            user_id: Идентификатор пользователя
+            status: Фильтр по статусу чтения
+
+        Returns:
+            List[UserBook]: Список книг пользователя
+        """
         try:
             data = self.db.get_user_books(user_id, status)
             return [UserBook(item) for item in data]
@@ -322,50 +317,53 @@ class UserManager:
             print(f"Ошибка получения книг пользователя: {e}")
             return []
 
-    def get_book_info(self, user_id, book_id):
-        try:
-            books = self.get_user_books(user_id)
-            for book in books:
-                if book.book_id == book_id:
-                    return book
-            return None
-        except Exception as e:
-            print(f"Ошибка получения информации о книге: {e}")
-            return None
-
-    def has_book(self, user_id, book_id):
-        try:
-            return self.get_book_info(user_id, book_id) is not None
-        except Exception as e:
-            print(f"Ошибка проверки наличия книги: {e}")
-            return False
-
-    def update_progress(self, user_id, book_id, current_page):
-        try:
-            return self.update_book_status(user_id, book_id, 'reading', current_page)
-        except Exception as e:
-            print(f"Ошибка обновления прогресса: {e}")
-            return False
 
     def get_stats(self, user_id):
+        """
+        Получает статистику чтения для указанного пользователя.
+
+        Args:
+            user_id: Уникальный идентификатор пользователя
+
+        Returns:
+            Dict[str, Any]: Словарь со статистическими данными пользователя или пустой словарь в случае ошибки
+        """
         try:
             return self.db.get_user_stats(user_id)
         except Exception as e:
             print(f"Ошибка получения статистики: {e}")
             return {}
 
-    def count_user_books(self, user_id):
-        try:
-            books = self.get_user_books(user_id)
-            return len(books)
-        except Exception as e:
-            print(f"Ошибка подсчета книг пользователя: {e}")
-            return 0
-
     def get_completed_books(self, user_id):
+        """
+        Получает список завершенных (прочитанных) книг пользователя.
+
+        Args:
+            user_id: Уникальный идентификатор пользователя
+
+        Returns:
+            List[UserBook]: Список объектов UserBook со статусом 'completed'
+        """
         try:
             books = self.get_user_books(user_id)
             return [book for book in books if book.is_completed()]
         except Exception as e:
             print(f"Ошибка получения завершенных книг: {e}")
             return []
+
+    def count_user_books(self, user_id):
+        """
+        Подсчитывает общее количество книг в коллекции пользователя.
+
+        Args:
+            user_id: Уникальный идентификатор пользователя
+
+        Returns:
+            int: Количество книг в коллекции пользователя или 0 при ошибке
+        """
+        try:
+            books = self.get_user_books(user_id)
+            return len(books)
+        except Exception as e:
+            print(f"Ошибка подсчета книг пользователя: {e}")
+            return 0
