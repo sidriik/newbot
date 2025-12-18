@@ -95,7 +95,7 @@ async def progress_command(update: Update, context):
         user = update.effective_user
         book_id = int(context.args[0])
         page = int(context.args[1])
-user_db_id = user_manager.get_or_create_user(
+        user_db_id = user_manager.get_or_create_user(
             telegram_id=user.id,
             username=user.username,
             first_name=user.first_name
