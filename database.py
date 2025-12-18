@@ -494,7 +494,7 @@ class Database:
         genres = [row['genre'] for row in rows]
         
         return genres if genres else ["Классика", "Фэнтези", "Роман", "Детектив", "Антиутопия"]
-        def add_book_to_catalog(self, title, author, pages, genre, description=""):
+    def add_book_to_catalog(self, title, author, pages, genre, description=""):
         """
         Добавляет новую книгу в каталог.
         
@@ -551,4 +551,4 @@ class Database:
         except Exception as e:
             conn.rollback()
             conn.close()
-            return False, None, f"Неизвестная ошибка: {str(e)}"
+            return False, None, f"Неизвестная ошибка: {str(e)}"       
