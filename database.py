@@ -494,3 +494,61 @@ class Database:
         genres = [row['genre'] for row in rows]
         
         return genres if genres else ["Классика", "Фэнтези", "Роман", "Детектив", "Антиутопия"]
+        def add_book_to_catalog(self, title, author, pages, genre, description=""):
+        """
+        Добавляет новую книгу в каталог.
+        
+        Args:
+            title (str): Название книги
+            author (str): Автор книги
+            pages (int): Количество страниц
+            genre (str): Жанр книги
+            description (str, optional): Описание книги
+            
+        Returns:
+            tuple: (success, book_id, message)
+                - success (bool): True если успешно, False если ошибка
+                - book_id (int): ID книги или None
+                - message (str): Сообщение для пользователя
+                
+        Что делает:
+            1. Проверяет, нет ли уже такой книги
+            2. Если нет - добавляет
+            3. Возвращает результат
+        """
+        conn = self.get_connection()
+        cur = conn.cursor()
+        
+        try:
+            # Проверяем, есть ли уже такая книга
+            cur.execute(
+                'SELECT id FROM books WHERE LOWER(title) = LOWER(?) AND LOWER(author) = LOWER(?)',
+                (title, author)
+            )
+            existing = cur.fetchone()
+            
+            if existing:
+                # Книга уже есть в каталоге
+                conn.close()
+                return False, existing['id'], "Книга уже есть в каталоге"
+            
+            # Добавляем новую книгу
+            cur.execute('''
+                INSERT INTO books (title, author, total_pages, genre, description)
+                VALUES (?, ?, ?, ?, ?)
+            ''', (title, author, pages, genre, description))
+            
+            book_id = cur.lastrowid
+            conn.commit()
+            conn.close()
+            
+            return True, book_id, "Книга успешно добавлена"
+            
+        except sqlite3.IntegrityError as e:
+            conn.rollback()
+            conn.close()
+            return False, None, f"Ошибка базы данных: {str(e)}"
+        except Exception as e:
+            conn.rollback()
+            conn.close()
+            return False, None, f"Неизвестная ошибка: {str(e)}"

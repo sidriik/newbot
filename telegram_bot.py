@@ -280,6 +280,15 @@ async def add_command(update: Update, context):
 
 
 async def addbook_command(update: Update, context):
+    """
+    Обработчик команды /addbook.
+    
+    Добавляет новую книгу в общий каталог.
+    
+    Args:
+        update: Объект Update от Telegram
+        context: Контекст выполнения команды
+    """
     if not context.args or len(context.args) < 4:
         await update.message.reply_text(
             f"{EMOJI['cross']} Использование: /addbook <название> <автор> <страницы> <жанр> [описание]\n\n"
@@ -293,8 +302,8 @@ async def addbook_command(update: Update, context):
     try:
         args = context.args
 
-        title = args[0].replace("_", " ").strip()
-        author = args[1].replace("_", " ").strip()
+        title = args[0].replace('_', ' ').strip()
+        author = args[1].replace('_', ' ').strip()
 
         try:
             pages = int(args[2])
@@ -309,12 +318,12 @@ async def addbook_command(update: Update, context):
             )
             return
 
-        genre = args[3].replace("_", " ").strip()
+        genre = args[3].replace('_', ' ').strip()
 
         description = ""
         if len(args) > 4:
             desc_parts = args[4:]
-            description = " ".join(desc_parts).replace("_", " ").strip()
+            description = " ".join(desc_parts).replace('_', ' ').strip()
 
         if not title or not author:
             await update.message.reply_text(
@@ -322,62 +331,39 @@ async def addbook_command(update: Update, context):
             )
             return
 
-        conn = sqlite3.connect("books.db")
-        cursor = conn.cursor()
+        # Используем новый метод из BookManager
+        success, book_id, message = book_manager.add_book_to_catalog(title, author, pages, genre, description)
 
-        cursor.execute(
-            "SELECT id FROM books WHERE LOWER(title) = LOWER(?) AND LOWER(author) = LOWER(?)",
-            (title, author),
-        )
-        existing = cursor.fetchone()
-
-        if existing:
-            book_id = existing[0]
-            conn.close()
-            await update.message.reply_text(
-                f"{EMOJI['cross']} Книга уже есть в каталоге!\n\n"
-                f"{EMOJI['book']} {title}\n"
-                f"{EMOJI['user']} {author}\n"
-                f"{EMOJI['list']} ID: {book_id}\n\n"
-                f"Добавить себе: /add {book_id}"
+        if success:
+            response = (
+                f"{EMOJI['check']} Книга добавлена в каталог!\n\n"
+                f"{EMOJI['list']} ID: {book_id}\n"
+                f"{EMOJI['book']} Название: {title}\n"
+                f"{EMOJI['user']} Автор: {author}\n"
+                f"{EMOJI['list']} Страниц: {pages}\n"
+                f"{EMOJI['folder']} Жанр: {genre}"
             )
-            return
 
-        cursor.execute(
-            """
-            INSERT INTO books (title, author, total_pages, genre, description)
-            VALUES (?, ?, ?, ?, ?)
-        """,
-            (title, author, pages, genre, description),
-        )
+            if description:
+                response += f"\n{EMOJI['info']} Описание: {description}"
 
-        book_id = cursor.lastrowid
-        conn.commit()
-        conn.close()
-
-        response = (
-            f"{EMOJI['check']} Книга добавлена в каталог!\n\n"
-            f"{EMOJI['list']} ID: {book_id}\n"
-            f"{EMOJI['book']} Название: {title}\n"
-            f"{EMOJI['user']} Автор: {author}\n"
-            f"{EMOJI['list']} Страниц: {pages}\n"
-            f"{EMOJI['folder']} Жанр: {genre}"
-        )
-
-        if description:
-            response += f"\n{EMOJI['info']} Описание: {description}"
-
-        response += f"\n\n{EMOJI['plus']} Добавить себе: /add {book_id}"
+            response += f"\n\n{EMOJI['plus']} Добавить себе: /add {book_id}"
+        else:
+            # Если книга уже существует или ошибка
+            if "уже есть" in message.lower():
+                response = (
+                    f"{EMOJI['cross']} {message}\n\n"
+                    f"{EMOJI['book']} {title}\n"
+                    f"{EMOJI['user']} {author}\n"
+                    f"{EMOJI['list']} ID: {book_id}\n\n"
+                    f"Добавить себе: /add {book_id}"
+                )
+            else:
+                response = f"{EMOJI['cross']} {message}"
 
         await update.message.reply_text(response)
 
-        print(f"[LOG] Добавлена новая книга: '{title}' - '{author}' (ID: {book_id})")
-
-    except sqlite3.Error as e:
-        await update.message.reply_text(
-            f"{EMOJI['cross']} Ошибка базы данных: {str(e)}"
-        )
-        print(f"[ERROR] Ошибка БД в /addbook: {e}")
+        print(f"[LOG] Добавление книги: '{title}' - '{author}' (ID: {book_id})")
 
     except Exception as e:
         await update.message.reply_text(

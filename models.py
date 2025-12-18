@@ -254,6 +254,28 @@ class BookManager:
         except Exception as e:
             print(f"Ошибка подсчета книг: {e}")
             return 0
+    def add_book_to_catalog(self, title, author, pages, genre, description=""):
+        """
+        Добавляет новую книгу в каталог.
+        
+        Args:
+            title (str): Название книги
+            author (str): Автор книги
+            pages (int): Количество страниц
+            genre (str): Жанр книги
+            description (str, optional): Описание книги
+            
+        Returns:
+            tuple: (success, book_id, message)
+                - success (bool): True если успешно
+                - book_id (int): ID книги или None
+                - message (str): Сообщение для пользователя
+        """
+        try:
+            return self.db.add_book_to_catalog(title, author, pages, genre, description)
+        except Exception as e:
+            print(f"Ошибка добавления книги в каталог: {e}")
+            return False, None, f"Ошибка: {str(e)}"
 
 
 class UserManager:
